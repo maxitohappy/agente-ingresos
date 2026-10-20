@@ -30,6 +30,16 @@ st.markdown("""
 4. El Excel incluye la hoja *Cálculo* con **fórmulas vivas**: cambia la elasticidad o el tipo de cambio (celdas
    amarillas) y todo se recalcula.
 
+### Tráfico aéreo (JAC y OACI)
+- **JAC – informe mensual** (se descarga y procesa solo): pasajeros domésticos e internacionales de los últimos 13
+  meses, variación interanual y rutas principales. Pregunta: *"¿cómo va el tráfico aéreo según la JAC?"*.
+- **JAC – base histórica** (2014 en adelante): pasajeros embarcados por aeropuerto y mes. Se usa para **validar** los
+  pasajeros que infiere el agente y para **proyectar con estacionalidad** los meses sin datos. Pregunta:
+  *"pasajeros embarcados en Calama según la JAC"*.
+- **OACI – Monthly Monitor**: variación de la capacidad aérea (ASK) por región del mundo. Pregunta: *"datos de la OACI"*.
+- En las simulaciones de embarque la reseña agrega automáticamente la comparación con la JAC, la tendencia del último
+  informe y el dato regional de la OACI.
+
 ### Datos que busca solo
 Tarifario de embarque (API pública de la DGAC), dólar observado, UF, UTM, IPC, IMACEC y TPM (mindicador.cl; API CMF
 y Banco Central si se configuran en el backend). Si un dato no está disponible (por ejemplo el **PIB regional**),

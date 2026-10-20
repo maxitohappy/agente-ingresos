@@ -7,7 +7,7 @@ from datetime import date, datetime
 
 import pandas as pd
 
-from . import backend, indicadores, interprete, resena, simulador
+from . import backend, indicadores, interprete, jac, oaci, resena, simulador
 from .formato import millones, numero, porcentaje
 from .indicadores import CATALOGO, Valor
 from .interprete import Consulta
@@ -20,6 +20,8 @@ EJEMPLOS = [
     "¿Cuánto representa Calama en el total de concesiones?",
     "Eliminar el derecho de embarque nacional en la región de Aysén durante el primer semestre",
     "Si el embarque internacional baja a 20 dólares en Santiago y los pasajeros aumentan 4%, ¿cuánto se recauda en el año completo?",
+    "¿Cómo va el tráfico aéreo según la JAC?",
+    "Pasajeros embarcados en Calama según la JAC",
     "El PIB regional de Magallanes 2024 es 5.900 miles de millones",
 ]
 
@@ -52,11 +54,15 @@ class Respuesta:
     usados: list[Valor] = field(default_factory=list)
     mensaje: str = ""
     tc: float | None = None
+    tablas: dict = field(default_factory=dict)        # respuestas de tráfico: nombre -> DataFrame
+    grafico: dict | None = None                       # {"datos": DataFrame, "x": col, "series": [cols], "titulo"}
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     fecha: str = field(default_factory=lambda: datetime.now().isoformat(timespec="seconds"))
 
     def resumen(self) -> str:
         if self.resultado is None:
+            if self.tablas and self.resena:
+                return self.resena[0][:200]
             return self.mensaje[:200]
         sel = self.resultado.niveles.iloc[0]
         if self.resultado.es_simulacion:
@@ -130,6 +136,128 @@ def _ranking(r: simulador.Resultado, df: pd.DataFrame) -> list[dict]:
     return [{"texto": f"Ocupa el lugar **{pos} de {len(rk)}** unidades con ingresos por {c.concepto}."}]
 
 
+MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def _texto_unidades(c: Consulta, df: pd.DataFrame) -> str:
+    if c.region and len(c.unidades) > 1:
+        return f"la región de {c.region}"
+    return ", ".join(sorted(df.loc[df["unidad_cod"].isin(c.unidades), "unidad"].unique())) or "las unidades"
+
+
+def contexto_jac(r: simulador.Resultado, df: pd.DataFrame) -> list[dict]:
+    """Comparación con pasajeros embarcados de la JAC y tendencia del último informe mensual."""
+    c = r.consulta
+    salida = []
+    if c.concepto in (None, simulador.EMBARQUE) and c.unidades:
+        meses = sorted(set(r.meses))
+        tab = jac.embarques_unidades(c.unidades, meses, c.ambito if c.ambito != "todos" else "todos")
+        if not tab.empty:
+            ult = tab.iloc[-1]
+            if len(tab) > 1 and tab.iloc[-2]["pasajeros"]:
+                var = f" ({porcentaje(ult['pasajeros'] / tab.iloc[-2]['pasajeros'] - 1, 1, True)} vs {int(tab.iloc[-2]['anio'])})"
+            else:
+                var = ""
+            txt = (f"Según la **JAC**, en {MESES_CORTOS[meses[0] - 1]}–{MESES_CORTOS[meses[-1] - 1]} {int(ult['anio'])} se "
+                   f"embarcaron **{numero(ult['pasajeros'])} pasajeros** en vuelos comerciales en "
+                   f"{_texto_unidades(c, df)}{var}.")
+            # Mismos meses en ambas fuentes: solo los meses observados (sin proyectados).
+            pax_obs = float(r.detalle.loc[~r.detalle["proyectado"].astype(bool), "pax"].sum())
+            if pax_obs and ult["pasajeros"]:
+                txt += (f" El agente estima {numero(pax_obs)} en los mismos meses de {c.anio} a partir de la "
+                        f"recaudación ({porcentaje(pax_obs / ult['pasajeros'] - 1, 1, True)}).")
+            salida.append({"texto": txt})
+    if c.concepto == simulador.EMBARQUE:
+        inf = jac.informe()
+        u = jac.ultimo_mes(inf)
+        if u:
+            acum = (inf or {}).get("acumulado") or {}
+            txt = (f"Tendencia (JAC, {inf['periodo']}): tráfico doméstico {porcentaje(u['var_dom'], 1, True)} e "
+                   f"internacional {porcentaje(u['var_int'], 1, True)} interanual")
+            if acum.get("var_total") is not None:
+                txt += f"; acumulado {acum['anio']} {porcentaje(acum['var_total'], 1, True)}"
+            salida.append({"texto": txt + "."})
+        if c.ambito != "nacional":
+            t = oaci.texto_region(oaci.cargar())
+            if t:
+                salida.append({"texto": t})
+    return salida
+
+
+def responder_trafico(c: Consulta, df: pd.DataFrame, resp: "Respuesta") -> "Respuesta":
+    """Preguntas sobre tráfico aéreo: JAC (Chile) y OACI (regiones del mundo)."""
+    textos = []
+    if c.fuente in ("jac", "ambas"):
+        if c.unidades:
+            emb = jac.embarques()
+            # Sin meses indicados se comparan los meses disponibles del último año (años comparables).
+            meses = c.meses or sorted(emb.loc[emb["anio"] == emb["anio"].max(), "mes"].unique().tolist())
+            e = emb[emb["unidad_cod"].isin(c.unidades) & emb["mes"].isin(meses)]
+            if c.ambito != "todos":
+                e = e[e["tipo"] == c.ambito]
+            if e.empty:
+                textos.append("La base de la JAC no registra pasajeros embarcados en vuelos comerciales para esa selección.")
+            else:
+                anual = e.pivot_table(index="anio", columns="tipo", values="pasajeros", aggfunc="sum", fill_value=0)
+                anual["total"] = anual.sum(axis=1)
+                anual["variación"] = anual["total"].pct_change()
+                anual = anual.reset_index().rename(columns={"anio": "Año", "nacional": "Nacional",
+                                                            "internacional": "Internacional", "total": "Total",
+                                                            "variación": "Variación"})
+                ult = anual.iloc[-1]
+                ultimo = int(ult["Año"])
+                mensual = (e[e["anio"] == ultimo].groupby("mes")["pasajeros"].sum().reset_index())
+                mensual["Mes"] = mensual["mes"].map(lambda m: MESES_CORTOS[m - 1])
+                rango = (f"{MESES_CORTOS[min(meses) - 1]}–{MESES_CORTOS[max(meses) - 1]} "
+                         if len(meses) < 12 else "")
+                textos.append(f"**Pasajeros embarcados según la JAC en {_texto_unidades(c, df)}**: "
+                              f"{numero(ult['Total'])} en {rango}{ultimo}"
+                              + (f" ({porcentaje(ult['Variación'], 1, True)} interanual)." if pd.notna(ult["Variación"]) else "."))
+                resp.tablas[f"Embarques por año ({rango.strip() or 'año completo'})"] = anual
+                resp.tablas[f"Embarques por mes {ultimo}"] = mensual[["Mes", "pasajeros"]].rename(
+                    columns={"pasajeros": "Pasajeros"})
+                resp.grafico = {"datos": anual, "x": "Año", "series": ["Total"], "titulo": "Pasajeros embarcados (JAC)"}
+                textos.append("Fuente: base histórica de tráfico aéreo de la JAC (vuelos comerciales; cada tramo "
+                              "cuenta como un embarque en el aeropuerto de origen).")
+        else:
+            inf = jac.informe()
+            if not inf:
+                textos.append("No se pudo obtener el informe mensual de la JAC en este momento.")
+            else:
+                textos += [f"**Informe mensual de tráfico aéreo JAC – {inf['periodo']}.**"] + [
+                    "• " + x for x in inf.get("resumen", [])[:4]]
+                s = jac.serie_df(inf)
+                if not s.empty:
+                    s["Mes"] = [f"{MESES_CORTOS[m - 1]}-{str(a)[2:]}" for a, m in zip(s["anio"], s["mes"])]
+                    tabla = s[["Mes", "domestico", "internacional", "total", "var_dom", "var_int", "var_total"]].rename(
+                        columns={"domestico": "Doméstico", "internacional": "Internacional", "total": "Total",
+                                 "var_dom": "Var. doméstico", "var_int": "Var. internacional", "var_total": "Var. total"})
+                    resp.tablas["Pasajeros transportados por mes"] = tabla
+                    resp.grafico = {"datos": tabla, "x": "Mes", "series": ["Doméstico", "Internacional"],
+                                    "titulo": "Pasajeros transportados (JAC)"}
+                rutas = pd.DataFrame(inf.get("rutas", []))
+                if not rutas.empty:
+                    resp.tablas["Rutas principales del mes"] = rutas.rename(columns={
+                        "tipo": "Tipo", "ruta": "Ruta", "anterior": "Año anterior", "actual": "Mes actual",
+                        "variacion": "Variación", "participacion": "Participación"})
+                if inf.get("url"):
+                    textos.append(f"Fuente: [informe JAC]({inf['url']}).")
+    if c.fuente in ("oaci", "ambas"):
+        o = oaci.cargar()
+        if not o:
+            textos.append("No hay datos de la OACI cargados.")
+        else:
+            reg = pd.DataFrame([{"Región": k, **v} for k, v in o["regiones"].items()]).rename(columns={
+                "ask_total": "ASK total", "ask_internacional": "ASK internacional", "rpk_total": "RPK total"})
+            resp.tablas[f"OACI – variación interanual {o['periodo']}"] = reg
+            if not resp.grafico:
+                resp.grafico = {"datos": reg, "x": "Región", "series": ["ASK total"], "titulo": "Capacidad aérea (ASK), var. interanual"}
+            textos.append(oaci.texto_region(o) or "")
+            textos.append(f"Fuente: [ICAO Air Transport Monthly Monitor {o['edicion']}]({o['url']}).")
+    resp.resena = [t for t in textos if t]
+    return resp
+
+
 def responder(pregunta: str, df: pd.DataFrame, tar: dict, tc_usuario: float | None = None,
               usar_ia: bool = True, usuario: str = "", consulta: Consulta | None = None) -> Respuesta:
     c = consulta or interpretar(pregunta, df, usar_ia)
@@ -137,6 +265,8 @@ def responder(pregunta: str, df: pd.DataFrame, tar: dict, tc_usuario: float | No
     if c.tipo == "dato" and c.dato:
         resp.mensaje = guardar_dato(c.dato, usuario)
         return resp
+    if c.tipo == "trafico":
+        return responder_trafico(c, df, resp)
     if c.tipo == "desconocida":
         resp.mensaje = ("No logré interpretar la consulta. Indica qué concepto (derecho de embarque, tasas, "
                         "combustible, concesiones u otros ingresos), qué cambio (p. ej. 'rebaja de 5 dólares' o "
@@ -180,7 +310,7 @@ def responder(pregunta: str, df: pd.DataFrame, tar: dict, tc_usuario: float | No
             raise
         return resp
     resp.resultado = r
-    contexto = _ranking(r, df) + _contexto(r, df, memoria, resp.usados, resp.faltantes)
+    contexto = _ranking(r, df) + contexto_jac(r, df) + _contexto(r, df, memoria, resp.usados, resp.faltantes)
     resp.resena = resena.generar(r, contexto)
     for v in resp.usados:
         r.supuestos.append((v.etiqueta, f"{numero(v.valor, 2)} {v.unidad}", v.cita()))

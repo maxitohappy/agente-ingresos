@@ -4,7 +4,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from core import almacen, backend, datos, indicadores, red, tarifario
+from core import almacen, backend, datos, indicadores, jac, red, tarifario
 from core.formato import numero, porcentaje
 
 EN_NAVEGADOR = red.EN_NAVEGADOR
@@ -50,11 +50,27 @@ def inicializar() -> None:
         return
     with st.spinner("Consultando tarifario DGAC e indicadores económicos…"):
         msgs = []
-        if not EN_NAVEGADOR or backend.configurado():
-            msgs.append(tarifario.actualizar_desde_dgac())
-            st.session_state.pop("tar", None)
-        estado = indicadores.actualizar_cache()
-        msgs.append("Indicadores: " + "; ".join(estado))
+        inicio = None
+        if backend.configurado():
+            # Una sola llamada trae indicadores, tarifario DGAC y memoria compartida.
+            try:
+                inicio = backend.get("inicio")
+            except Exception as e:  # noqa: BLE001
+                msgs.append(f"Backend sin respuesta ({e}); se usan datos guardados.")
+        if inicio:
+            msgs.append(tarifario.actualizar_desde_dgac(pagina=inicio.get("pagina_dgac"))
+                        if inicio.get("pagina_dgac") else "Tarifario DGAC: " + inicio.get("pagina_dgac_error", "sin datos"))
+            if "indicadores" in inicio:
+                msgs.append("Indicadores: " + "; ".join(indicadores.actualizar_cache(precargados=inicio["indicadores"])))
+            if "memoria" in inicio:
+                indicadores.precargar_memoria(inicio["memoria"])
+            jac.precargar(inicio.get("jac"))
+            st.session_state.ia_disponible = bool(inicio.get("ia"))
+        else:
+            if not EN_NAVEGADOR:
+                msgs.append(tarifario.actualizar_desde_dgac())
+            msgs.append("Indicadores: " + "; ".join(indicadores.actualizar_cache()))
+        st.session_state.pop("tar", None)
     st.session_state.estado_fuentes = msgs
     st.session_state.inicializado = True
 
@@ -80,10 +96,11 @@ def barra_lateral() -> None:
         else:
             st.caption("Sin dólar observado disponible: ingrésalo para simular cambios en dólares.")
         nombre = st.text_input("Tu nombre (para el historial)", value=p.get("usuario", ""), max_chars=40)
-        ia = st.toggle("Usar IA (Gemini) si las reglas no entienden", value=p.get("usar_ia", True),
-                       disabled=not backend.configurado(),
-                       help="Solo se envía el texto de la pregunta, nunca los montos." if backend.configurado()
-                       else "Requiere configurar el backend (ver Ayuda).")
+        ia_ok = backend.configurado() and st.session_state.get("ia_disponible", True)
+        ia = st.toggle("Usar IA (Gemini) si las reglas no entienden", value=p.get("usar_ia", True) and ia_ok,
+                       disabled=not ia_ok,
+                       help="Solo se envía el texto de la pregunta, nunca los montos." if ia_ok
+                       else "Requiere el backend con la clave GEMINI_API_KEY (ver Ayuda).")
         if nombre != p.get("usuario") or ia != p.get("usar_ia"):
             p["usuario"], p["usar_ia"] = nombre, ia
             guardar_preferencias()

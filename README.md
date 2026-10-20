@@ -25,6 +25,7 @@ registrada en un **historial**.
 | Intérprete | Reglas en español (conceptos, ciudades y aeropuertos, regiones, meses, monedas, elasticidad). Si no alcanzan, Gemini (opcional, vía backend; solo recibe el texto de la pregunta). |
 | Cálculo | Pasajeros = monto ÷ tarifa vigente de cada mes (tarifario DGAC, verificado contra la planilla). Escenario = pasajeros × (1 + Δ pasajeros) × tarifa nueva. Para otros conceptos, variación %. |
 | Datos públicos | Tarifario de embarque desde la API pública de la DGAC; dólar, UF, UTM, IPC, IMACEC y TPM desde mindicador.cl (y CMF / Banco Central si se configuran). |
+| Tráfico aéreo | JAC: informe mensual (en línea vía backend) y base histórica de embarques por aeropuerto (`scripts/actualizar_jac.py`), usada para validar pasajeros y proyectar con estacionalidad. OACI: Monthly Monitor (`scripts/actualizar_oaci.py`, debe correr desde un PC porque la OACI bloquea servidores en la nube). |
 | Memoria | Si falta un indicador (p. ej. PIB regional), la app lo pide y lo guarda para futuras consultas. |
 | Historial | Compartido en una Google Sheet a través del backend; sin backend, local en cada navegador. |
 | Excel | Hojas Resumen, Cálculo (celdas editables y fórmulas), Por unidad, Por mes, Gráficos, Indicadores y fuentes. |

@@ -4,57 +4,38 @@ from __future__ import annotations
 import re
 
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
 from core import agente, excel, indicadores
 from core.formato import millones, numero, porcentaje
 from core.indicadores import Valor
-from ui.comun import COLOR_BASE, COLOR_ESCENARIO, ingresos, md, preferencias, tabla, tarifas
-
-LAYOUT = dict(margin=dict(l=8, r=8, t=40, b=8), legend=dict(orientation="h", y=-0.15),
-              plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", hovermode="closest",
-              separators=",.", font=dict(size=12))
+from ui import graficos
+from ui.comun import ingresos, md, preferencias, tabla, tarifas
 
 
 def _nombre_archivo(resp) -> str:
-    base = re.sub(r"[^\w]+", "_", resp.resultado.titulo if resp.resultado else "consulta")[:60].strip("_")
+    titulo = resp.resultado.titulo if resp.resultado else (resp.grafico or {}).get("titulo", "consulta")
+    base = re.sub(r"[^\w]+", "_", titulo)[:60].strip("_")
     return f"Agente_Ingresos_{base}_{resp.fecha[:10]}.xlsx"
 
 
-def _grafico_unidades(r) -> go.Figure | None:
+def _grafico_unidades(r):
     pu = r.por_unidad.head(12)
     if pu.empty:
         return None
-    fig = go.Figure()
-    fig.add_bar(y=pu["unidad"], x=pu["monto"] / 1e6, name="Base", orientation="h", marker_color=COLOR_BASE,
-                hovertemplate="%{y}<br>Base: $%{x:,.1f} millones<extra></extra>")
-    if r.es_simulacion:
-        fig.add_bar(y=pu["unidad"], x=pu["escenario"] / 1e6, name="Escenario", orientation="h",
-                    marker_color=COLOR_ESCENARIO, hovertemplate="%{y}<br>Escenario: $%{x:,.1f} millones<extra></extra>")
-    fig.update_layout(title="Por unidad (millones de $)", barmode="group", bargap=0.25, bargroupgap=0.08,
-                      height=max(260, 34 * len(pu) * (2 if r.es_simulacion else 1) // 1.6 + 90),
-                      yaxis=dict(autorange="reversed"), xaxis=dict(gridcolor="rgba(128,128,128,0.15)", tickformat=",.0f"),
-                      showlegend=r.es_simulacion, **LAYOUT)
-    fig.update_traces(marker_cornerradius=4)
-    return fig
+    d = pu.rename(columns={"unidad": "Unidad", "monto": "Base", "escenario": "Escenario"})
+    series = ["Base", "Escenario"] if r.es_simulacion else ["Base"]
+    return graficos.barras(d, "Unidad", series, "Por unidad (millones de $)", horizontal=True, escala=1e6)
 
 
-def _grafico_meses(r) -> go.Figure | None:
+def _grafico_meses(r):
     pm = r.por_mes
     if pm.empty:
         return None
-    fig = go.Figure()
-    etiquetas = [m + (" (proy.)" if p else "") for m, p in zip(pm["Mes"], pm["proyectado"])]
-    fig.add_bar(x=etiquetas, y=pm["monto"] / 1e6, name="Base", marker_color=COLOR_BASE,
-                hovertemplate="%{x}<br>Base: $%{y:,.1f} millones<extra></extra>")
-    if r.es_simulacion:
-        fig.add_bar(x=etiquetas, y=pm["escenario"] / 1e6, name="Escenario", marker_color=COLOR_ESCENARIO,
-                    hovertemplate="%{x}<br>Escenario: $%{y:,.1f} millones<extra></extra>")
-    fig.update_layout(title="Por mes (millones de $)", barmode="group", bargap=0.25, bargroupgap=0.08, height=320,
-                      yaxis=dict(gridcolor="rgba(128,128,128,0.15)", tickformat=",.0f"), showlegend=r.es_simulacion, **LAYOUT)
-    fig.update_traces(marker_cornerradius=4)
-    return fig
+    d = pm.assign(Periodo=[m + (" (proy.)" if p else "") for m, p in zip(pm["Mes"], pm["proyectado"])]).rename(
+        columns={"monto": "Base", "escenario": "Escenario"})
+    series = ["Base", "Escenario"] if r.es_simulacion else ["Base"]
+    return graficos.barras(d, "Periodo", series, "Por mes (millones de $)", escala=1e6)
 
 
 def _recalcular(resp, **cambios) -> None:
@@ -90,7 +71,31 @@ def faltantes(resp, clave: str) -> None:
                     st.rerun()
 
 
+PORCENTUALES = ("Var", "Variación", "Participación", "ASK", "RPK")
+
+
+def mostrar_tablas(resp, clave: str) -> None:
+    """Respuestas de tráfico aéreo (JAC / OACI): texto, gráfico, tablas y Excel."""
+    for p in resp.resena:
+        st.markdown(md(p) if not p.startswith("Fuente:") else p)
+    g = resp.grafico
+    if g is not None and not g["datos"].empty:
+        porcentual = all(s.startswith(PORCENTUALES) for s in g["series"])
+        st.altair_chart(graficos.barras(g["datos"], g["x"], g["series"], g["titulo"], porcentual=porcentual,
+                                        horizontal=porcentual), width="stretch", key=f"gt_{clave}")
+    for nombre, df in resp.tablas.items():
+        with st.expander(nombre, expanded=len(resp.tablas) == 1):
+            tabla(df, porcentajes=[c for c in df.columns if str(c).startswith(PORCENTUALES)])
+    if "excel" not in resp.__dict__:
+        resp.__dict__["excel"] = excel.generar_tablas(resp)
+    st.download_button("📥 Descargar Excel", resp.__dict__["excel"], file_name=_nombre_archivo(resp),
+                       key=f"dl_{clave}", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
 def mostrar(resp, clave: str) -> None:
+    if resp.tablas:
+        mostrar_tablas(resp, clave)
+        return
     if resp.mensaje and resp.resultado is None:
         st.markdown(md(resp.mensaje))
     r = resp.resultado
@@ -126,10 +131,10 @@ def mostrar(resp, clave: str) -> None:
         with t1:
             g1, g2 = st.columns(2)
             f1, f2 = _grafico_unidades(r), _grafico_meses(r)
-            if f1:
-                g1.plotly_chart(f1, width="stretch", key=f"gu_{clave}")
-            if f2:
-                g2.plotly_chart(f2, width="stretch", key=f"gm_{clave}")
+            if f1 is not None:
+                g1.altair_chart(f1, width="stretch", key=f"gu_{clave}")
+            if f2 is not None:
+                g2.altair_chart(f2, width="stretch", key=f"gm_{clave}")
         with t2:
             tabla(r.niveles if r.es_simulacion else r.niveles[["Nivel", "Base"]], porcentajes=["Variación"])
         with t3:

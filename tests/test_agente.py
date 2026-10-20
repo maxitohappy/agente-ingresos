@@ -200,3 +200,70 @@ def test_excel_generado(df, tar):
     assert str(ws["I12"].value).startswith("=")   # pasajeros con fórmula
     wb2 = openpyxl.load_workbook(io.BytesIO(excel.historial([{"pregunta": "x", "resumen": "y"}])))
     assert wb2["Historial"]["C4"].value == "x"
+
+
+# --- Tráfico aéreo (JAC / OACI) ------------------------------------------------------------------
+
+def test_interprete_trafico(cat):
+    c = interprete.interpretar("¿Cómo va el tráfico aéreo según la JAC?", cat, 2026)
+    assert c.tipo == "trafico" and c.fuente == "jac"
+    c = interprete.interpretar("Pasajeros embarcados en Calama según la JAC", cat, 2026)
+    assert c.tipo == "trafico" and c.unidades == [1401]
+    c = interprete.interpretar("datos de la OACI para Latinoamérica", cat, 2026)
+    assert c.tipo == "trafico" and c.fuente == "oaci"
+    # Una simulación que menciona pasajeros sigue siendo simulación.
+    assert interprete.interpretar("rebaja de 5 dólares y los pasajeros aumentan 3%", cat, 2026).tipo == "simulacion"
+
+
+def test_jac_informe_texto():
+    from core import jac
+
+    pagina = ("INFORME MENSUAL DE TRÁFICO AÉREO EN CHILE \nSEPTIEMBRE 2026 \n\n"
+              "En septiembre de 2026 se transportaron 2,23 millones de pasajeros en vuelos domésticos e internacionales.\n\n"
+              "Mes Dom Int Total Dom Int Total\n"
+              "ago-26 1.167.933 1.020.137 2.188.070 -1,5 -2,8 -2,1 \n"
+              "sept-26 1.288.851 941.443 2.230.294 1,6 -1,6 0,2 \n"
+              "Acum. 2026 11.660.572 9.216.451 20.877.023 -2,8 -0,7 -1,9 \n"
+              "Mes Dom Int Total Dom Int Total\n"
+              "ago-26 2.759 30.371 33.130 -3,0 3,7 3,1\n")
+    rutas = ("Pasajeros en vuelos domésticos por ruta (diez mayores niveles)\n"
+             "Ruta Septiembre 2025 Septiembre 2026 Var 26/25 (%) Participación sep-26 (%)\n"
+             "SANTIAGO - CALAMA 187.915  198.681  5,7  15,4  \nTOTAL 1 2 3 4\n")
+    inf = jac.interpretar_paginas([pagina, rutas])
+    assert inf["periodo"] == "Septiembre 2026"
+    assert len(inf["serie"]) == 2 and inf["serie"][-1]["domestico"] == 1288851
+    assert inf["serie"][-1]["var_total"] == pytest.approx(0.002)
+    assert inf["acumulado"]["total"] == 20877023
+    assert inf["rutas"][0] == {"tipo": "nacional", "ruta": "SANTIAGO - CALAMA", "anterior": 187915, "actual": 198681,
+                               "variacion": pytest.approx(0.057), "participacion": pytest.approx(0.154)}
+
+
+def test_jac_embarques_y_estacionalidad():
+    from core import jac
+
+    e = jac.embarques()
+    assert not e.empty and {"anio", "mes", "aeropuerto", "tipo", "pasajeros", "unidad_cod"} <= set(e.columns)
+    assert (e["unidad_cod"] == 4101).any()           # Punta Arenas mapeado a su unidad DGAC
+    s = jac.estacionalidad([4101])
+    assert s and sum(s.values()) == pytest.approx(12)
+
+
+def test_proyeccion_usa_estacionalidad(df, tar, cat):
+    c = interprete.interpretar("alza de 10% del embarque en Punta Arenas en el año completo", cat, 2026)
+    r = simulador.ejecutar(df, c, tar, tc=950)
+    pm = r.por_mes.set_index("mes")["monto"]
+    assert pm[12] > pm[10]                           # diciembre es temporada alta en Punta Arenas
+
+
+def test_respuesta_trafico_con_unidades(df, tar):
+    r = agente.responder("Pasajeros embarcados en Punta Arenas según la JAC", df, tar)
+    assert r.tablas and r.grafico and "JAC" in r.resena[0]
+    wb = openpyxl.load_workbook(io.BytesIO(excel.generar_tablas(r)))
+    assert len(wb.sheetnames) == 1 + len(r.tablas)
+
+
+def test_oaci_texto():
+    from core import oaci
+
+    o = {"periodo": "2026-08", "regiones": {"Latinoamérica/Caribe": {"ask_total": 0.068, "ask_internacional": 0.06}}}
+    assert oaci.texto_region(o) == "OACI (08/2026): en Latinoamérica/Caribe, capacidad total (ASK) +6,8%, internacional +6,0% interanual."

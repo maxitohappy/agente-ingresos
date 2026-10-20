@@ -107,9 +107,7 @@ def consultar_publicos() -> tuple[list[Valor], list[str]]:
     valores, estado = [], []
     if red.EN_NAVEGADOR:
         try:
-            for d in backend.get("indicadores") or []:
-                valores.append(Valor(**{k: d[k] for k in ("indicador", "periodo", "valor", "unidad", "fuente")
-                                        if k in d}))
+            valores = _valores_de(backend.get("indicadores"))
             estado.append(f"backend: {len(valores)} valores")
         except Exception as e:  # noqa: BLE001
             estado.append(f"backend: {e}")
@@ -125,12 +123,21 @@ def consultar_publicos() -> tuple[list[Valor], list[str]]:
     return valores, estado
 
 
-def actualizar_cache(forzar: bool = False) -> list[str]:
+def _valores_de(filas) -> list[Valor]:
+    return [Valor(**{k: d[k] for k in ("indicador", "periodo", "valor", "unidad", "fuente") if k in d})
+            for d in filas or []]
+
+
+def actualizar_cache(forzar: bool = False, precargados: list[dict] | None = None) -> list[str]:
+    """Actualiza la caché de indicadores públicos (6 h). `precargados` viene de la llamada de inicio."""
     cache = almacen.leer_json(CACHE, {})
-    if not forzar and cache.get("fecha"):
+    if precargados is None and not forzar and cache.get("fecha"):
         if datetime.now() - datetime.fromisoformat(cache["fecha"]) < timedelta(hours=HORAS_CACHE):
             return cache.get("estado", [])
-    valores, estado = consultar_publicos()
+    if precargados is not None:
+        valores, estado = _valores_de(precargados), [f"backend: {len(precargados)} valores"]
+    else:
+        valores, estado = consultar_publicos()
     if valores:
         cache = {"fecha": datetime.now().isoformat(timespec="seconds"), "estado": estado,
                  "valores": [asdict(v) for v in valores]}
@@ -147,23 +154,55 @@ def _publicos_en_cache() -> list[Valor]:
     return [Valor(**v) for v in almacen.leer_json(CACHE, {}).get("valores", [])]
 
 
+_RESPALDO: list = []
+
+
 def _respaldo() -> list[Valor]:
+    if _RESPALDO:
+        return _RESPALDO[0]
     try:
         j = json.loads(RESPALDO.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return []
     hoy = date.today().isoformat()
     # Se descartan períodos futuros (ej. la UF ya publicada del mes siguiente).
-    return [Valor(r["indicador"], r["periodo"], float(r["valor"]), r.get("unidad", ""), r.get("fuente", ""),
-                  origen="respaldo") for r in j.get("registros", []) if str(r["periodo"]) <= hoy[:len(str(r["periodo"]))]]
+    valores = [Valor(r["indicador"], r["periodo"], float(r["valor"]), r.get("unidad", ""), r.get("fuente", ""),
+                     origen="respaldo") for r in j.get("registros", []) if str(r["periodo"]) <= hoy[:len(str(r["periodo"]))]]
+    _RESPALDO.append(valores)
+    return valores
 
 
 # --- 2. Memoria del usuario ----------------------------------------------------------------
 
+# Caché en memoria del proceso: evita ir al backend en cada cambio de página.
+SEGUNDOS_MEMORIA = 300
+_memoria = {"filas": None, "hora": 0.0}
+
+
+def precargar_memoria(filas: list[dict]) -> None:
+    import time
+
+    _memoria.update(filas=filas, hora=time.time())
+
+
+def _invalidar_memoria() -> None:
+    _memoria.update(filas=None, hora=0.0)
+
+
+def _filas_memoria() -> list[dict]:
+    import time
+
+    if _memoria["filas"] is not None and time.time() - _memoria["hora"] < SEGUNDOS_MEMORIA:
+        return _memoria["filas"]
+    filas = backend.get("memoria") or []
+    precargar_memoria(filas)
+    return filas
+
+
 def listar_memoria() -> list[Valor]:
     if backend.configurado():
         try:
-            filas = backend.get("memoria") or []
+            filas = _filas_memoria()
             salida = []
             for f in filas:
                 d = {k: str(f[k]) for k in Valor.__dataclass_fields__ if f.get(k) not in (None, "")}
@@ -187,6 +226,7 @@ def guardar_en_memoria(v: Valor) -> str:
         backend.post("guardar_memoria", {"registro": d})
     except Exception:  # noqa: BLE001
         destino = "memoria de este navegador"
+    _invalidar_memoria()
     local = almacen.leer_json(MEMORIA_LOCAL, [])
     local.append(d)
     almacen.escribir_json(MEMORIA_LOCAL, local)
@@ -198,6 +238,7 @@ def borrar_de_memoria(id_: str) -> None:
         backend.post("borrar_memoria", {"id": id_})
     except Exception:  # noqa: BLE001
         pass
+    _invalidar_memoria()
     almacen.escribir_json(MEMORIA_LOCAL, [v for v in almacen.leer_json(MEMORIA_LOCAL, []) if v.get("id") != id_])
 
 

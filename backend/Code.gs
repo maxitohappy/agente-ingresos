@@ -70,10 +70,13 @@ function doGet(e) {
   try {
     switch (p.accion) {
       case 'ping': return json_({ok: true, datos: {hora: new Date().toISOString(), ia: !!prop_('GEMINI_API_KEY')}});
+      case 'inicio': return json_({ok: true, datos: inicio_()});
       case 'indicadores': return json_({ok: true, datos: indicadores_()});
+      case 'jac_informe': return json_({ok: true, datos: jacInforme_()});
       case 'pagina_dgac': return json_({ok: true, datos: paginaDgac_(p.slug || 'tasa-embarque')});
-      case 'historial': return json_({ok: true, datos: leer_(HOJA_HISTORIAL, Number(p.limite) || 300)});
-      case 'memoria': return json_({ok: true, datos: leer_(HOJA_MEMORIA, 2000)});
+      case 'archivo': return json_({ok: true, datos: archivo_(p.url)});
+      case 'historial': return json_({ok: true, datos: leerCache_(HOJA_HISTORIAL, Number(p.limite) || 300)});
+      case 'memoria': return json_({ok: true, datos: leerCache_(HOJA_MEMORIA, 2000)});
       default: return json_({ok: false, error: 'acción desconocida: ' + p.accion});
     }
   } catch (err) {
@@ -87,10 +90,11 @@ function doPost(e) {
     d = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     switch (d.accion) {
       case 'interpretar': return json_({ok: true, datos: interpretar_(d)});
-      case 'guardar_historial': return json_({ok: true, datos: agregar_(HOJA_HISTORIAL, COLS_HISTORIAL, d.registro)});
-      case 'guardar_memoria': return json_({ok: true, datos: agregar_(HOJA_MEMORIA, COLS_MEMORIA, d.registro)});
-      case 'borrar_memoria': return json_({ok: true, datos: borrar_(HOJA_MEMORIA, d.id)});
-      case 'borrar_historial': return json_({ok: true, datos: borrar_(HOJA_HISTORIAL, d.id)});
+      case 'guardar_historial': return json_({ok: true, datos: invalidar_(HOJA_HISTORIAL, agregar_(HOJA_HISTORIAL, COLS_HISTORIAL, d.registro))});
+      case 'guardar_memoria': return json_({ok: true, datos: invalidar_(HOJA_MEMORIA, agregar_(HOJA_MEMORIA, COLS_MEMORIA, d.registro))});
+      case 'borrar_memoria': return json_({ok: true, datos: invalidar_(HOJA_MEMORIA, borrar_(HOJA_MEMORIA, d.id))});
+      case 'guardar_jac': return json_({ok: true, datos: guardarJac_(d.informe)});
+      case 'borrar_historial': return json_({ok: true, datos: invalidar_(HOJA_HISTORIAL, borrar_(HOJA_HISTORIAL, d.id))});
       default: return json_({ok: false, error: 'acción desconocida: ' + d.accion});
     }
   } catch (err) {
@@ -102,7 +106,36 @@ function prop_(k) {
   return PropertiesService.getScriptProperties().getProperty(k);
 }
 
+// --- Inicio: todo lo que la app necesita al abrirse, en una sola llamada ---------------------------
+
+function inicio_() {
+  const salida = {ia: !!prop_('GEMINI_API_KEY')};
+  [['indicadores', indicadores_], ['pagina_dgac', function () { return paginaDgac_('tasa-embarque'); }],
+   ['memoria', function () { return leerCache_(HOJA_MEMORIA, 2000); }],
+   ['jac', function () { const j = prop_('JAC_INFORME'); return j ? JSON.parse(j) : null; }]].forEach(function (x) {
+    try { salida[x[0]] = x[1](); } catch (e) { salida[x[0] + '_error'] = String(e && e.message || e); }
+  });
+  return salida;
+}
+
 // --- Planilla ----------------------------------------------------------------------------------
+
+/** Lectura con caché de 10 minutos; se invalida en cada escritura. */
+function leerCache_(nombre, limite) {
+  const cache = CacheService.getScriptCache();
+  const k = 'hoja_' + nombre + '_' + limite;
+  const c = cache.get(k);
+  if (c) return JSON.parse(c);
+  const filas = leer_(nombre, limite);
+  try { cache.put(k, JSON.stringify(filas), 600); } catch (e) { /* más de 100 KB: sin caché */ }
+  return filas;
+}
+
+function invalidar_(nombre, resultado) {
+  const cache = CacheService.getScriptCache();
+  cache.removeAll(['hoja_' + nombre + '_2000', 'hoja_' + nombre + '_300', 'hoja_' + nombre + '_500']);
+  return resultado;
+}
 
 function leer_(nombre, limite) {
   const h = libro_().getSheetByName(nombre);
@@ -166,6 +199,57 @@ function paginaDgac_(slug) {
   const j = get_(DGAC_API + slug);
   try { cache.put(k, JSON.stringify(j), 21600); } catch (e) { /* página muy grande para la caché */ }
   return j;
+}
+
+// Archivos públicos de sitios permitidos (JAC, OACI): HTML como texto; PDF/Excel en base64.
+const DOMINIOS_PERMITIDOS = /^https:\/\/(www\.)?(jac\.gob\.cl|icao\.int|www2023\.icao\.int|data\.icao\.int|applications\.icao\.int)\//;
+
+function archivo_(url) {
+  if (!DOMINIOS_PERMITIDOS.test(String(url || ''))) throw new Error('dominio no permitido');
+  const cache = CacheService.getScriptCache();
+  const k = 'arch_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, url));
+  const c = cache.get(k);
+  if (c) return JSON.parse(c);
+  const r = UrlFetchApp.fetch(url, {muteHttpExceptions: true, validateHttpsCertificates: false, followRedirects: true,
+    headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130 Safari/537.36'}});
+  const tipo = String(r.getHeaders()['Content-Type'] || r.getHeaders()['content-type'] || '');
+  const salida = {estado: r.getResponseCode(), tipo: tipo};
+  if (/text|json|html|xml/.test(tipo)) salida.texto = r.getContentText();
+  else salida.base64 = Utilities.base64Encode(r.getContent());
+  try { cache.put(k, JSON.stringify(salida), 21600); } catch (e) { /* demasiado grande para la caché */ }
+  return salida;
+}
+
+/** Guarda el informe JAC ya procesado por un cliente (máx. 9 KB) para entregarlo en `inicio`. */
+function guardarJac_(informe) {
+  const texto = JSON.stringify({fecha: new Date().toISOString(), informe: informe});
+  if (texto.length > 9000) throw new Error('informe demasiado grande');
+  PropertiesService.getScriptProperties().setProperty('JAC_INFORME', texto);
+  return {guardado: true};
+}
+
+/** Último Informe Mensual de Tráfico Aéreo de la JAC (PDF): URL wp-content/uploads/AAAA/MM/AAAAMM-Informe.pdf. */
+function jacInforme_() {
+  const cache = CacheService.getScriptCache();
+  let url = cache.get('jac_informe_url');
+  if (!url) {
+    const hoy = new Date();
+    for (let atras = 1; atras <= 8 && !url; atras++) {
+      const r = new Date(hoy.getFullYear(), hoy.getMonth() - atras, 1);
+      const rep = Utilities.formatDate(r, 'GMT', 'yyyyMM');
+      for (let sub = 1; sub <= 2 && !url; sub++) {
+        const c = new Date(r.getFullYear(), r.getMonth() + sub, 1);
+        const cand = 'https://www.jac.gob.cl/wp-content/uploads/' + Utilities.formatDate(c, 'GMT', 'yyyy/MM') + '/' + rep + '-Informe.pdf';
+        const resp = UrlFetchApp.fetch(cand, {muteHttpExceptions: true, validateHttpsCertificates: false});
+        if (resp.getResponseCode() === 200 && /pdf/.test(String(resp.getHeaders()['Content-Type'] || ''))) url = cand;
+      }
+    }
+    if (!url) throw new Error('No se encontró un informe mensual reciente de la JAC');
+    cache.put('jac_informe_url', url, 43200);
+  }
+  const a = archivo_(url);
+  a.url = url;
+  return a;
 }
 
 const UNIDADES_IND = {

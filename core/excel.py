@@ -357,6 +357,51 @@ def _hoja_calculo(ws, resp, f) -> str:
     return "'Cálculo'!" + celda(tot, col_dif, row_abs=True, col_abs=True)
 
 
+def generar_tablas(resp) -> bytes:
+    """Excel de respuestas de tráfico (JAC / OACI): resumen, una hoja por tabla y gráfico."""
+    buf = io.BytesIO()
+    wb = xlsxwriter.Workbook(buf, {"in_memory": True, "nan_inf_to_errors": True})
+    f = _formatos(wb)
+    ws = wb.add_worksheet("Resumen")
+    ws.set_column("A:A", 110)
+    ws.write("A1", "Agente Ingresos – Tráfico aéreo", f["titulo"])
+    ws.write("A2", f"Generado el {datetime.now():%d-%m-%Y %H:%M}", f["nota"])
+    ws.write("A4", "Pregunta: " + resp.pregunta, f["txt"])
+    import re as _re
+
+    for i, p in enumerate(resp.resena, start=5):
+        limpio = _re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1: \2", p.replace("**", ""))
+        ws.write(i, 0, limpio, f["txt"])
+        ws.set_row(i, 15 * max(1, len(limpio) // 120 + 1))
+    hojas = {}
+    for nombre, df in resp.tablas.items():
+        hoja = _re.sub(r"[\[\]:*?/\\]", "", nombre)[:31]
+        w = wb.add_worksheet(hoja)
+        w.set_column(0, len(df.columns), 18)
+        w.write("A1", nombre, f["subtitulo"])
+        pct = {c: "pct" for c in df.columns if str(c).startswith(("Var", "Variación", "Participación", "ASK", "RPK"))}
+        _tabla(w, 2, 0, df, f, pct)
+        hojas[nombre] = (hoja, df)
+    g = resp.grafico
+    if g is not None:
+        hoja, df = next(((h, d) for h, d in hojas.values() if g["x"] in d.columns and all(s in d.columns for s in g["series"])),
+                        (None, None))
+        if hoja:
+            ch = wb.add_chart({"type": "column"})
+            n = len(df)
+            colx = list(df.columns).index(g["x"])
+            for k, s in enumerate(g["series"]):
+                cs = list(df.columns).index(s)
+                ch.add_series({"name": s, "categories": [hoja, 3, colx, 2 + n, colx], "values": [hoja, 3, cs, 2 + n, cs],
+                               "fill": {"color": [CELESTE, NARANJO, "#1BAF7A"][k % 3]}})
+            ch.set_title({"name": g["titulo"], "name_font": {"size": 12}})
+            ch.set_legend({"position": "bottom"})
+            ch.set_size({"width": 760, "height": 360})
+            ws.insert_chart(len(resp.resena) + 7, 0, ch)
+    wb.close()
+    return buf.getvalue()
+
+
 def historial(registros: list[dict]) -> bytes:
     buf = io.BytesIO()
     wb = xlsxwriter.Workbook(buf, {"in_memory": True})

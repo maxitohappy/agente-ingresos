@@ -22,12 +22,15 @@ NUM = r"(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)"
 BAJA = r"rebaj\w*|reduc\w*|disminu\w*|baj[ae]\w*|descuento\w*|bajar|recort\w*|menos"
 ALZA = r"alza\w*|aument\w*|sub[eiao]\w*|subir|increment\w*|reajust\w*|mas|encarec\w*|suba"
 CERO = r"elimin\w*|exencion|exentar|exime\w*|eximir|gratuit\w*|suprim\w*|liber\w* (?:del|de) pago"
+TRAFICO = (r"\b(jac|junta (?:de )?aeronautica|oaci|icao|trafico aereo|trafico de pasajeros|rutas?|aerolineas?|"
+           r"operador(?:es)?|lineas aereas|capacidad aerea|ask|rpk|mercado aereo|estadisticas? de trafico)\b")
 
 
 @dataclass
 class Consulta:
     texto: str
-    tipo: str = "desconocida"           # simulacion | consulta | dato | desconocida
+    tipo: str = "desconocida"           # simulacion | consulta | trafico | dato | desconocida
+    fuente: str | None = None           # trafico: jac | oaci | ambas
     concepto: str | None = None
     filtro_descripcion: str | None = None
     ambito: str = "todos"               # todos | nacional | internacional
@@ -290,6 +293,12 @@ def interpretar(texto: str, catalogo_unidades: dict[int, str] | None = None, ani
             c.confianza = 0.3
         else:
             c.confianza = 0.9 if c.concepto else 0.5
+    elif re.search(TRAFICO, t) or re.search(r"\bpasajeros\b.*\bsegun\b", t):
+        c.tipo = "trafico"
+        oaci = bool(re.search(r"\b(oaci|icao|ask|rpk|mundial|latinoamerica|regional|regiones)\b", t))
+        jac = bool(re.search(r"\b(jac|junta|rutas?|aerolineas?|operador|chile)\b", t)) or bool(c.unidades)
+        c.fuente = "ambas" if oaci and jac else ("oaci" if oaci else "jac")
+        c.confianza = 0.85
     elif re.search(r"\b(cuanto|cuantos|total|participacion|representa|ranking|ingreso|ingresos|muestra|mostrar|"
                    r"cual|cuales|monto|pasajeros|compar|evolucion|recaud|distribucion)\w*\b", t):
         c.tipo = "consulta"

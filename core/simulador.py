@@ -71,8 +71,27 @@ def _convertir(valor: float, de: str, a: str, tc: float | None, uf: float | None
     return clp / tc if a == "USD" else clp
 
 
+def _factores_estacionales(unidades: list[int], disp: list[int], futuros: list[int]) -> dict[int, dict[int, float]]:
+    """Por unidad: factor de cada mes futuro = peso JAC del mes ÷ peso promedio de los meses observados."""
+    from . import jac
+
+    salida = {}
+    nacional = jac.estacionalidad([])
+    for u in set(unidades) | {0}:
+        s = (jac.estacionalidad([u]) if u else None) or nacional
+        if not s:
+            continue
+        base = np.mean([s[m] for m in disp]) if disp else 1.0
+        salida[u] = {m: s[m] / base for m in futuros}
+    return salida
+
+
 def _proyectar(df: pd.DataFrame, anio: int, meses_futuros: list[int]) -> pd.DataFrame:
-    """Filas de meses sin datos: promedio mensual observado por combinación."""
+    """Filas de meses sin datos: promedio mensual observado por combinación.
+
+    En el derecho de embarque el promedio se ajusta por la estacionalidad de pasajeros embarcados de la JAC
+    (último año completo) de cada aeropuerto; si no hay datos del aeropuerto, la estacionalidad nacional.
+    """
     if not meses_futuros:
         return df.iloc[0:0]
     disp = [m for a, m in meses_disponibles(df) if a == anio]
@@ -81,10 +100,15 @@ def _proyectar(df: pd.DataFrame, anio: int, meses_futuros: list[int]) -> pd.Data
     base = df[df["anio"] == anio].groupby(claves, as_index=False)[["monto", "monto_usd", "pax"]].sum()
     for col in ("monto", "monto_usd", "pax"):
         base[col] = base[col] / max(len(disp), 1)
+    factores = _factores_estacionales(base["unidad_cod"].unique().tolist(), disp, meses_futuros)
+    emb = base["concepto"] == EMBARQUE
     filas = []
     for mes in meses_futuros:
         b = base.copy()
         b["mes"] = mes
+        f = b["unidad_cod"].map(lambda u: factores.get(u, factores.get(0, {})).get(mes, 1.0))
+        for col in ("monto", "monto_usd", "pax"):
+            b.loc[emb, col] = b.loc[emb, col] * f[emb]
         filas.append(b)
     p = pd.concat(filas, ignore_index=True)
     p["proyectado"] = True
@@ -96,35 +120,28 @@ def _pasajeros(df: pd.DataFrame, tar: dict) -> pd.DataFrame:
     d = df.copy()
     tc_mes = tipo_cambio_mensual(df)
     tc_prom = float(np.mean(list(tc_mes.values()))) if tc_mes else np.nan
-    d["clase"] = None
-    d["tarifa_base"] = np.nan
-    d["moneda_tarifa"] = ""
-    d["tc_fila"] = np.nan
-    d["pax"] = 0.0
     emb = d["concepto"] == EMBARQUE
-    memo: dict = {}
-    for i in d.index[emb]:
-        clase = tarifario.clase_de(d.at[i, "tasa"])
-        if clase is None:
-            continue
-        a, m = int(d.at[i, "anio"]), int(d.at[i, "mes"])
-        if (clase, a, m) not in memo:
-            memo[(clase, a, m)] = tarifario.tarifa_mes(tar, clase, a, m)
-        t = memo[(clase, a, m)]
-        if not t:
-            continue
-        mon = tarifario.moneda(tar, clase)
-        d.at[i, "clase"], d.at[i, "tarifa_base"], d.at[i, "moneda_tarifa"] = clase, t, mon
-        if mon == "USD":
-            if d.at[i, "monto_usd"] > 0:
-                tc = d.at[i, "monto"] / d.at[i, "monto_usd"]
-                d.at[i, "pax"] = d.at[i, "monto_usd"] / t
-            else:
-                tc = tc_mes.get((a, m), tc_prom)
-                d.at[i, "pax"] = d.at[i, "monto"] / (t * tc)
-            d.at[i, "tc_fila"] = tc
-        else:
-            d.at[i, "pax"] = d.at[i, "monto"] / t
+    # Vectorizado: una tarifa por (clase, año, mes) y operaciones por columna (rápido también en el navegador).
+    d["clase"] = np.where(emb, d["tasa"].map(lambda x: tarifario.clase_de(x)), None)
+    claves = d.loc[d["clase"].notna(), ["clase", "anio", "mes"]].drop_duplicates()
+    tarifas = {(k, a, m): tarifario.tarifa_mes(tar, k, int(a), int(m)) for k, a, m in claves.itertuples(index=False)}
+    d["tarifa_base"] = [tarifas.get((k, a, m), np.nan) if isinstance(k, str) else np.nan
+                        for k, a, m in zip(d["clase"], d["anio"], d["mes"])]
+    d["tarifa_base"] = d["tarifa_base"].astype(float)
+    d["moneda_tarifa"] = d["clase"].map(lambda k: tarifario.moneda(tar, k) if isinstance(k, str) else "")
+    sin_tarifa = d["tarifa_base"].isna() | (d["tarifa_base"] == 0)
+    d.loc[sin_tarifa, "clase"] = None
+    d.loc[sin_tarifa, "moneda_tarifa"] = ""
+    usd = d["moneda_tarifa"] == "USD"
+    con_usd = usd & (d["monto_usd"] > 0)
+    tc_m = pd.Series([tc_mes.get((int(a), int(m)), tc_prom) for a, m in zip(d["anio"], d["mes"])], index=d.index)
+    d["tc_fila"] = np.where(con_usd, d["monto"] / d["monto_usd"].where(d["monto_usd"] > 0), np.where(usd, tc_m, np.nan))
+    d["pax"] = 0.0
+    clp = (d["moneda_tarifa"] == "CLP")
+    d.loc[clp, "pax"] = d.loc[clp, "monto"] / d.loc[clp, "tarifa_base"]
+    d.loc[con_usd, "pax"] = d.loc[con_usd, "monto_usd"] / d.loc[con_usd, "tarifa_base"]
+    sin_usd = usd & ~con_usd
+    d.loc[sin_usd, "pax"] = d.loc[sin_usd, "monto"] / (d.loc[sin_usd, "tarifa_base"] * d.loc[sin_usd, "tc_fila"])
     return d
 
 

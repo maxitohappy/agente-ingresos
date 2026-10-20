@@ -114,9 +114,11 @@ def interpretar_pagina(texto_html: str) -> dict[str, float]:
     return salida
 
 
-def leer_dgac() -> tuple[dict[str, float], str]:
+def leer_dgac(pagina: dict | None = None) -> tuple[dict[str, float], str]:
     """Tarifas publicadas hoy por la DGAC. En el navegador pasa por el backend (CORS)."""
-    if red.EN_NAVEGADOR:
+    if pagina is not None:
+        j = pagina
+    elif red.EN_NAVEGADOR:
         j = backend.get("pagina_dgac", slug="tasa-embarque")
     else:
         j = red.get_json(URL_DGAC)
@@ -128,12 +130,12 @@ def leer_dgac() -> tuple[dict[str, float], str]:
     return interpretar_pagina(html), fecha
 
 
-def actualizar_desde_dgac(hoy: date | None = None) -> str:
+def actualizar_desde_dgac(hoy: date | None = None, pagina: dict | None = None) -> str:
     """Agrega una vigencia nueva si la DGAC publica valores distintos a los registrados."""
     hoy = hoy or date.today()
     tar = cargar()
     try:
-        valores, fecha = leer_dgac()
+        valores, fecha = leer_dgac(pagina)
     except Exception as e:  # noqa: BLE001
         return f"No se pudo leer el tarifario de la DGAC ({e}); se usan las tarifas registradas."
     if not valores:
