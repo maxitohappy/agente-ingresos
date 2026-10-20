@@ -164,14 +164,18 @@ def mostrar(resp, clave: str) -> None:
         if r.es_simulacion and resp.consulta.concepto == "Derecho de Embarque":
             with b2.popover("Ajustar supuestos y recalcular"):
                 with st.form(f"ajuste_{clave}", border=False):
-                    e = st.number_input("Elasticidad (magnitud)", 0.0, 10.0, float(resp.consulta.elasticidad or 0),
-                                        0.1, format="%.2f")
+                    pp = st.number_input("Precio promedio del pasaje (CLP por tramo)", min_value=0.0,
+                                         value=resp.consulta.precio_pasaje, step=1000.0, format="%.0f",
+                                         help="Necesario para estimar el efecto en pasajeros.")
+                    e = st.number_input("Elasticidad respecto del precio del pasaje (0 = ver escenarios 0,5/1,0/1,5)",
+                                        0.0, 10.0, float(resp.consulta.elasticidad or 0), 0.1, format="%.2f")
                     vp = st.number_input("o variación directa de pasajeros % (vacío = usar elasticidad)",
                                          value=resp.consulta.var_pasajeros, step=1.0, format="%.1f")
                     tc = st.number_input("Tipo de cambio (CLP/USD)", 0.0, 5000.0, float(resp.tc or 0), 1.0,
                                          format="%.2f")
                     if st.form_submit_button("Recalcular", type="primary"):
-                        _recalcular(resp, elasticidad=e or None, var_pasajeros=vp, tipo_cambio=tc or None)
+                        _recalcular(resp, elasticidad=e or None, var_pasajeros=vp, tipo_cambio=tc or None,
+                                    precio_pasaje=pp or None)
                         st.rerun()
     if resp.faltantes:
         faltantes(resp, clave)

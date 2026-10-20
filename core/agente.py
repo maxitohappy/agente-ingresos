@@ -297,7 +297,9 @@ def efecto_pasajeros(r: simulador.Resultado, df: pd.DataFrame, tar: dict, memori
     por_pax = dif / pax
     textos.append(f"Si se traspasa completo, equivale a **{pesos(abs(por_pax))} por pasajero embarcado** "
                   f"({numero(pax)} pasajeros en {lugar} en el período).")
-    tarifa = indicadores.obtener("tarifa_pasaje", c.region, memoria=memoria) or (
+    tarifa = (indicadores.Valor("tarifa_pasaje", str(c.anio), c.precio_pasaje, "CLP", "indicado en la consulta",
+                                origen="usuario") if c.precio_pasaje else None) or indicadores.obtener(
+        "tarifa_pasaje", c.region, memoria=memoria) or (
         indicadores.obtener("tarifa_pasaje", None, memoria=memoria) if c.region else None)
     if tarifa is None:
         resp.faltantes.append(Faltante("tarifa_pasaje", c.region, str(c.anio),
@@ -325,6 +327,38 @@ def efecto_pasajeros(r: simulador.Resultado, df: pd.DataFrame, tar: dict, memori
                   f"embarque; efecto neto {millones(medio['Efecto neto (tasa + embarque)'])}. "
                   "Ver tabla con elasticidades 0,5 y 1,5.")
     return [{"texto": t} for t in textos]
+
+
+def escenarios_demanda(r: simulador.Resultado, df: pd.DataFrame, tar: dict, tc, uf, utm,
+                       resp: "Respuesta") -> list[dict]:
+    """Derecho de embarque: tabla con elasticidades de referencia respecto del precio del pasaje."""
+    c = r.consulta
+    if c.precio_pasaje is None:
+        return [{"texto": "**Efecto en pasajeros:** el resultado supone pasajeros constantes. Para estimar cuántos "
+                          "pasajeros adicionales generaría, indica el precio promedio del pasaje (p. ej. *'con pasaje "
+                          "promedio de 80.000'*) o usa **Ajustar supuestos**: se calcularán escenarios con "
+                          "elasticidades de referencia 0,5, 1,0 y 1,5."}]
+    filas = []
+    for e in ELASTICIDADES_PASAJE:
+        ci = Consulta.desde_dict({**c.a_dict(), "elasticidad": e, "var_pasajeros": None})
+        ri = simulador.ejecutar(df, ci, tar, tc=tc, uf=uf, utm=utm)
+        n0 = ri.niveles.iloc[0]
+        d = ri.detalle
+        tc_f = d["tc_fila"].where(d["moneda_tarifa"] == "USD", 1)
+        cambio = ((d["tarifa_nueva"] - d["tarifa_base"]) * tc_f * d["pax"]).sum() / max(d["pax"].sum(), 1)
+        filas.append({"Elasticidad precio del pasaje": e, "Variación del pasaje": cambio / c.precio_pasaje,
+                      "Variación de pasajeros": ri.pasajeros_escenario / ri.pasajeros_base - 1 if ri.pasajeros_base else 0,
+                      "Pasajeros adicionales": ri.pasajeros_escenario - ri.pasajeros_base,
+                      "Recaudación escenario": n0["Escenario"], "Diferencia": n0["Diferencia"],
+                      "Var. total de ingresos DGAC": ri.niveles.iloc[-1]["Variación"]})
+    tabla = pd.DataFrame(filas)
+    resp.tablas["Escenarios de demanda"] = tabla
+    m = tabla.iloc[1]
+    return [{"texto": f"**Escenarios de demanda** (elasticidades de referencia respecto del pasaje de "
+                      f"{pesos(c.precio_pasaje)}): con elasticidad 1,0 el pasaje varía "
+                      f"{porcentaje(m['Variación del pasaje'], 1, True)}, los pasajeros "
+                      f"{porcentaje(m['Variación de pasajeros'], 1, True)} ({numero(m['Pasajeros adicionales'])}) y la "
+                      f"diferencia de recaudación queda en {millones(m['Diferencia'])}. Ver la tabla con 0,5 y 1,5."}]
 
 
 def responder(pregunta: str, df: pd.DataFrame, tar: dict, tc_usuario: float | None = None,
@@ -387,6 +421,9 @@ def responder(pregunta: str, df: pd.DataFrame, tar: dict, tc_usuario: float | No
                                      f"{porcentaje(c.cambio_valor / 100, 0, True)}** y una **sensibilidad de 5% a 25%** "
                                      "(tabla abajo). Para un valor exacto escribe, por ejemplo, "
                                      f"'{accion} de 15% …'."})
+    if (r.es_simulacion and c.concepto == simulador.EMBARQUE and c.var_pasajeros is None and not c.elasticidad
+            and c.cambio_tipo):
+        contexto += escenarios_demanda(r, df, tar, tc, uf, utm, resp)
     if c.efecto_pasajeros and r.es_simulacion:
         contexto += efecto_pasajeros(r, df, tar, memoria, resp)
     resp.resena = resena.generar(r, contexto)

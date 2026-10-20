@@ -46,10 +46,16 @@ def generar(r: Resultado, contexto: list[dict] | None = None) -> list[str]:
                 delta = base_dir / d["monto"].sum() - 1
                 if delta < -0.0001 and delta > -0.999:
                     necesario = -delta / (1 + delta)
-                    parrafos.append(
-                        f"La tarifa promedio cae {porcentaje(abs(delta))}. Para compensar íntegramente la menor "
-                        f"recaudación, los pasajeros deberían crecer **{porcentaje(necesario)}** (elasticidad de "
-                        f"equilibrio {numero(1 / (1 + delta), 2)}).")
+                    txt = (f"El derecho de embarque promedio cae {porcentaje(abs(delta))}. Para compensar "
+                           f"íntegramente la menor recaudación, los pasajeros deberían crecer **{porcentaje(necesario)}**.")
+                    if c.precio_pasaje and d["pax"].sum():
+                        tc_f = d["tc_fila"].where(d["moneda_tarifa"] == "USD", 1)
+                        rebaja = -((d["tarifa_nueva"] - d["tarifa_base"]) * tc_f * d["pax"]).sum() / d["pax"].sum()
+                        cae = rebaja / c.precio_pasaje
+                        if cae > 0:
+                            txt += (f" Como el pasaje promedio (${numero(c.precio_pasaje)}) baja solo "
+                                    f"{porcentaje(cae, 1)}, eso exigiría una elasticidad de {numero(necesario / cae, 1)}.")
+                    parrafos.append(txt)
         if len(r.por_unidad) > 1 and r.es_simulacion:
             top = r.por_unidad.reindex(r.por_unidad["diferencia"].abs().sort_values(ascending=False).index).head(3)
             parrafos.append("Unidades más afectadas: " + "; ".join(

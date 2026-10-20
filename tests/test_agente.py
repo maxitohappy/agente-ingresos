@@ -147,13 +147,52 @@ def test_rebaja_usd_punta_arenas_calculo_manual(df, tar, cat):
     assert (r.niveles["Diferencia"] - r.impacto).abs().max() < 1
 
 
-def test_elasticidad_aumenta_pasajeros(df, tar, cat):
+def test_elasticidad_respecto_del_pasaje(df, tar, cat):
     c0 = interprete.interpretar("rebaja de 10% del embarque en Punta Arenas", cat, 2026)
-    c1 = interprete.interpretar("rebaja de 10% del embarque en Punta Arenas con elasticidad 0,5", cat, 2026)
+    c1 = interprete.interpretar("rebaja de 10% del embarque en Punta Arenas con elasticidad 0,5 y pasaje promedio "
+                                "de 80.000", cat, 2026)
+    assert c1.elasticidad == 0.5 and c1.precio_pasaje == 80000
     r0, r1 = simulador.ejecutar(df, c0, tar), simulador.ejecutar(df, c1, tar)
     assert r0.impacto == pytest.approx(-0.1 * r0.niveles.iloc[0]["Base"], rel=1e-6)
-    assert r1.pasajeros_escenario == pytest.approx(r1.pasajeros_base * 1.05, rel=1e-6)
+    d = r1.detalle
+    tc_f = d["tc_fila"].where(d["moneda_tarifa"] == "USD", 1)
+    esperado = (d["pax"] * (1 - 0.5 * (d["tarifa_nueva"] - d["tarifa_base"]) * tc_f / 80000)).sum()
+    assert r1.pasajeros_escenario == pytest.approx(esperado, rel=1e-9)
+    # La rebaja del derecho es una fracción pequeña del pasaje: el aumento de pasajeros es acotado.
+    assert 0 < r1.pasajeros_escenario / r1.pasajeros_base - 1 < 0.01
     assert r1.impacto > r0.impacto
+
+
+def test_elasticidad_sin_precio_no_se_aplica(df, tar, cat):
+    c = interprete.interpretar("rebaja de 5 dólares del embarque en Punta Arenas con elasticidad 0,3", cat, 2026)
+    r = simulador.ejecutar(df, c, tar, tc=950)
+    assert r.pasajeros_escenario == pytest.approx(r.pasajeros_base)
+    assert any("falta el precio promedio del pasaje" in a for a in r.avisos)
+
+
+def test_escenarios_de_demanda(df, tar):
+    r = agente.responder("rebaja de 5 dólares del embarque en Punta Arenas con pasaje promedio de 80.000", df, tar,
+                         tc_usuario=950)
+    t = r.tablas["Escenarios de demanda"]
+    assert list(t["Elasticidad precio del pasaje"]) == [0.5, 1.0, 1.5]
+    assert t["Variación del pasaje"].iloc[0] == pytest.approx(-5 * 950 / 80000, rel=0.02)
+    assert t["Variación de pasajeros"].iloc[1] == pytest.approx(-t["Variación del pasaje"].iloc[1], rel=1e-6)
+    assert (t["Diferencia"].diff().dropna() > 0).all()      # más elasticidad, menor pérdida
+    sin_precio = agente.responder("rebaja de 5 dólares del embarque en Punta Arenas", df, tar, tc_usuario=950)
+    assert "Escenarios de demanda" not in sin_precio.tablas
+    assert any("precio promedio del pasaje" in p for p in sin_precio.resena)
+
+
+def test_excel_formula_elasticidad_pasaje(df, tar):
+    formulas = pytest.importorskip("formulas")
+    r = agente.responder("rebaja de 5 dólares del embarque en Punta Arenas con elasticidad 1 y pasaje promedio de 80.000",
+                         df, tar, tc_usuario=950)
+    import tempfile, os
+    ruta = os.path.join(tempfile.mkdtemp(), "e.xlsx")
+    open(ruta, "wb").write(excel.generar(r))
+    sol = formulas.ExcelModel().loads(ruta).finish().calculate()
+    total = [v.value[0, 0] for k, v in sol.items() if k.upper().endswith("RESUMEN'!D14")][0]
+    assert total == pytest.approx(r.resultado.impacto, rel=1e-6)
 
 
 def test_porcentaje_otro_concepto(df, tar, cat):

@@ -2,7 +2,9 @@
 
 Derecho de embarque (cambio por pasajero, % o tarifa nueva):
     pasajeros   = monto ÷ tarifa del mes (en CLP; los internacionales en USD usan el monto en USD)
-    pax nuevos  = pasajeros × (1 + var. pasajeros)  ó  pasajeros × (1 − elasticidad × Δ% tarifa)
+    pax nuevos  = pasajeros × (1 + var. pasajeros)  ó
+                  pasajeros × (1 − elasticidad × Δ derecho por pasajero ÷ precio promedio del pasaje)
+    (la elasticidad es respecto del precio total que paga el pasajero, no del derecho de embarque)
     monto nuevo = pax nuevos × tarifa nueva (× tipo de cambio de la fila si la tarifa es en USD)
 Otros conceptos: monto nuevo = monto × (1 + variación %).
 Meses sin datos (si se pide el año completo): promedio mensual observado de pasajeros (embarque,
@@ -217,8 +219,9 @@ def ejecutar(df: pd.DataFrame, c: Consulta, tar: dict, tc: float | None = None, 
             delta = t1 / t0 - 1 if t0 else 0.0
             if c.var_pasajeros is not None:
                 factor = 1 + c.var_pasajeros / 100
-            elif c.elasticidad:
-                factor = max(1 - c.elasticidad * delta, 0.0)
+            elif c.elasticidad and c.precio_pasaje:
+                cambio_clp = (t1 - t0) * (d.at[i, "tc_fila"] if mon == "USD" else 1)
+                factor = max(1 - c.elasticidad * cambio_clp / c.precio_pasaje, 0.0)
             else:
                 factor = 1.0
             pax1 = d.at[i, "pax"] * factor
@@ -230,12 +233,18 @@ def ejecutar(df: pd.DataFrame, c: Consulta, tar: dict, tc: float | None = None, 
         elif sin_clase.any():
             avisos.append(f"{int(sin_clase.sum())} filas de embarque sin código de tasa conocido quedan sin cambio "
                           f"(${d.loc[sin_clase, 'monto'].sum():,.0f}).".replace(",", "."))
-        if c.elasticidad and c.var_pasajeros is None:
-            supuestos.append(("Elasticidad de pasajeros al derecho de embarque", f"{c.elasticidad:g}".replace(".", ","),
-                              "Indicada por el usuario: Δ% pasajeros = −elasticidad × Δ% tarifa"))
+        if c.elasticidad and c.var_pasajeros is None and c.precio_pasaje:
+            supuestos.append(("Elasticidad respecto del precio del pasaje", f"{c.elasticidad:g}".replace(".", ","),
+                              "Δ% pasajeros = −elasticidad × (Δ derecho por pasajero ÷ precio promedio del pasaje)"))
+        elif c.elasticidad and c.var_pasajeros is None:
+            avisos.append("Para aplicar la elasticidad falta el precio promedio del pasaje (p. ej. 'con pasaje promedio "
+                          "de 80.000'); se muestra el impacto directo.")
+        if c.precio_pasaje:
+            supuestos.append(("Precio promedio del pasaje", f"${c.precio_pasaje:,.0f}".replace(",", "."),
+                              "Indicado por el usuario"))
         if c.var_pasajeros is not None:
             supuestos.append(("Variación de pasajeros", f"{c.var_pasajeros:+g}%".replace(".", ","), "Indicada por el usuario"))
-        if not c.elasticidad and c.var_pasajeros is None:
+        if not (c.elasticidad and c.precio_pasaje) and c.var_pasajeros is None:
             supuestos.append(("Pasajeros", "Sin cambio (impacto directo)", "Supuesto por defecto"))
     elif es_sim:
         if c.cambio_tipo != "porcentaje":

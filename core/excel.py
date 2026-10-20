@@ -287,17 +287,19 @@ def _hoja_calculo(ws, resp, f) -> str:
               ("Tipo de cambio tarifario", c.cambio_tipo or "", "input_t"),
               ("Valor del cambio (con signo; % si es porcentual)", valor_cambio, "input"),
               ("Moneda del cambio (USD / CLP)", moneda_cambio if c.cambio_tipo != "porcentaje" else "%", "input_t"),
-              ("Elasticidad (magnitud)", c.elasticidad or 0, "input"),
-              ("Variación directa de pasajeros % (vacío = usar elasticidad)", c.var_pasajeros, "input")]
+              ("Elasticidad respecto del precio del pasaje (magnitud)", c.elasticidad or 0, "input"),
+              ("Variación directa de pasajeros % (vacío = usar elasticidad)", c.var_pasajeros, "input"),
+              ("Precio promedio del pasaje CLP (vacío = sin efecto de elasticidad)", c.precio_pasaje, "input")]
     for i, (etq, val, fmt) in enumerate(params):
         ws.write(2 + i, 0, etq, f["etq"])
         if val is None:
             ws.write_blank(2 + i, 1, None, f[fmt])
         else:
             ws.write(2 + i, 1, val, f[fmt])
-    TC, VAL, MON, ELA, VPX = "$B$3", "$B$5", "$B$6", "$B$7", "$B$8"
+    TC, VAL, MON, ELA, VPX, PRE = "$B$3", "$B$5", "$B$6", "$B$7", "$B$8", "$B$9"
     ws.write("C3", "Fórmulas: pasajeros = monto ÷ tarifa (÷ TC si la tarifa es en USD); pasajeros escenario = "
-                   "pasajeros × (1 + var.%) o × (1 − elasticidad × Δ% tarifa); monto escenario = pasajeros escenario × "
+                   "pasajeros × (1 + var.%) o × (1 − elasticidad × Δ derecho por pasajero en $ ÷ precio del pasaje); "
+                   "monto escenario = pasajeros escenario × "
                    "tarifa nueva (× TC de la fila si es USD).", f["nota"])
     ws.set_row(2, 30)
     h0 = 10
@@ -333,7 +335,8 @@ def _hoja_calculo(ws, resp, f) -> str:
             else:
                 ft = f"=MAX(0,H{rr}+{conv})"
             ws.write_formula(fila, 9, ft, f["dec"], x.tarifa_nueva)
-            ws.write_formula(fila, 10, f'=IF({VPX}<>"",1+{VPX}/100,IF(H{rr}=0,1,MAX(0,1-{ELA}*(J{rr}/H{rr}-1))))',
+            ws.write_formula(fila, 10, f'=IF({VPX}<>"",1+{VPX}/100,IF(OR({PRE}="",{PRE}=0),1,'
+                                       f'MAX(0,1-{ELA}*(J{rr}-H{rr})*IF(E{rr}="USD",F{rr},1)/{PRE})))',
                              f["dec"], (x.pax_escenario / x.pax) if x.pax else 1)
             ws.write_formula(fila, 11, f"=I{rr}*K{rr}", f["pax"], x.pax_escenario)
             ws.write_formula(fila, 12, f'=L{rr}*J{rr}*IF(E{rr}="USD",F{rr},1)', f["clp"], x.escenario)

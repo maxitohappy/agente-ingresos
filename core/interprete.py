@@ -44,7 +44,8 @@ class Consulta:
     cambio_tipo: str | None = None      # absoluto | porcentaje | nuevo_valor
     cambio_valor: float = 0.0           # con signo: negativo = rebaja
     cambio_moneda: str | None = None    # USD | CLP | UF | UTM
-    elasticidad: float | None = None    # magnitud; se aplica con signo negativo
+    elasticidad: float | None = None    # magnitud, respecto del precio del pasaje; se aplica con signo negativo
+    precio_pasaje: float | None = None  # precio promedio del pasaje (CLP por tramo) para aplicar la elasticidad
     var_pasajeros: float | None = None  # % directo de variación de pasajeros
     sensibilidad: bool = False          # se pidió un cambio sin magnitud: escenario central + tabla de sensibilidad
     efecto_pasajeros: bool = False      # se pregunta por el efecto en pasajeros de una tasa que paga la aerolínea
@@ -184,6 +185,12 @@ def interpretar(texto: str, catalogo_unidades: dict[int, str] | None = None, ani
         return c
 
     # Supuestos explícitos: elasticidad, tipo de cambio, variación de pasajeros.
+    m = re.search(r"(?:precio|valor|tarifa)?\s*(?:promedio\s+)?(?:del?\s+)?(?:pasajes?|boletos?|tickets?)\s*"
+                  r"(?:promedio\s*)?(?:es|de|a|=|en|:|del orden de|cercano a)?\s*(?:clp\s*)?\$?\s*" + NUM +
+                  r"(?:\s*(?:pesos|clp))?", t)
+    if m and numero(m.group(1)) >= 1000:
+        c.precio_pasaje = numero(m.group(1))
+        t = _quitar(t, m)
     m = re.search(r"elasticidad(?:\s+precio)?(?:\s+de(?:\s+la\s+demanda)?)?\s*(?:de|del|igual a|=|es)?\s*(-?\s*" + NUM + ")", t)
     if m:
         c.elasticidad = abs(numero(m.group(2)))
@@ -313,9 +320,6 @@ def interpretar(texto: str, catalogo_unidades: dict[int, str] | None = None, ani
                    r"cual|cuales|monto|pasajeros|compar|evolucion|recaud|distribucion)\w*\b", t):
         c.tipo = "consulta"
         c.confianza = 0.8
-    if c.elasticidad is None and c.var_pasajeros is None and re.search(r"fomentar|incentiv|estimular|turismo", t):
-        c.notas.append("La consulta menciona fomento del turismo: puedes agregar una elasticidad (p. ej. "
-                       "'con elasticidad 0,5') o un aumento de pasajeros (p. ej. 'pasajeros aumentan 5%').")
     if c.anualizar:
         c.notas.append("Los meses sin datos se proyectan con el promedio mensual observado.")
     c.efecto_pasajeros = c.tipo == "simulacion" and c.concepto != "Derecho de Embarque" and bool(
