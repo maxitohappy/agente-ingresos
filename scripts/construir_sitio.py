@@ -24,15 +24,30 @@ PLANTILLA = """<!doctype html>
   <title>Agente Ingresos</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@__STLITE__/build/stlite.css" />
   <style>
-    body { margin: 0; font-family: system-ui, sans-serif; background: #fff; }
-    #cargando { max-width: 560px; margin: 18vh auto; padding: 0 16px; color: #1f3864; text-align: center; }
-    #cargando p { color: #52514e; line-height: 1.5; }
+    body { margin: 0; font-family: "Source Sans Pro", system-ui, sans-serif; background: #fff; }
+    /* Pantalla de carga propia (reemplaza los avisos en inglés de stlite). */
+    #cargando { position: fixed; inset: 0; z-index: 10000; background: #fff; display: flex; align-items: center;
+                justify-content: center; padding: 16px; transition: opacity .4s ease; }
+    #cargando.fuera { opacity: 0; pointer-events: none; }
+    #cargando .tarjeta { width: 100%; max-width: 440px; text-align: center; color: #1f3864; }
+    #cargando .icono { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%; background: #eaf2fc;
+                       display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    #cargando h1 { font-size: 26px; margin: 0 0 6px; font-weight: 700; }
+    #cargando .paso { color: #52514e; font-size: 16px; min-height: 24px; margin: 14px 0 10px; }
+    #cargando .barra { height: 6px; background: #edf0f4; border-radius: 3px; overflow: hidden; }
+    #cargando .avance { height: 100%; width: 3%; background: #2a78d6; border-radius: 3px; transition: width .7s ease; }
+    #cargando .nota { color: #8a8984; font-size: 13px; margin-top: 12px; line-height: 1.45; }
   </style>
 </head>
 <body>
-  <div id="cargando">
-    <h2>Agente Ingresos</h2>
-    <p>Cargando la aplicación en tu navegador (la primera vez puede tardar 30–60 segundos).</p>
+  <div id="cargando" role="status" aria-live="polite">
+    <div class="tarjeta">
+      <div class="icono" aria-hidden="true">✈️</div>
+      <h1>Agente Ingresos</h1>
+      <div class="paso" id="paso">Preparando el entorno de cálculo…</div>
+      <div class="barra"><div class="avance" id="avance"></div></div>
+      <div class="nota">La aplicación se ejecuta en tu navegador. La primera carga toma unos 20 segundos.</div>
+    </div>
   </div>
   <div id="root"></div>
   <script type="module">
@@ -47,16 +62,36 @@ PLANTILLA = """<!doctype html>
         idbfsMountpoints: ["/mnt"],
         env: { AGENTE_DATA_DIR: "/mnt/datos" },
         streamlitConfig: { "client.toolbarMode": "viewer", "theme.primaryColor": "#2a78d6" },
+        // Sin avisos de progreso en inglés (se muestra la pantalla de carga propia); los de error se mantienen.
+        disableProgressToasts: true,
+        disableModuleAutoLoadToasts: true,
       },
       document.getElementById("root"),
     );
+    // Pantalla de carga: pasos aproximados por tiempo; se retira cuando la app ya dibujó su menú o el chat.
+    const pasos = [[0, "Preparando el entorno de cálculo…"], [4, "Cargando librerías de análisis de datos…"],
+                   [9, "Iniciando la aplicación…"], [13, "Consultando tarifario DGAC e indicadores…"],
+                   [20, "Ya casi está listo…"]];
+    const inicio = Date.now();
+    const reloj = setInterval(() => {
+      const s = (Date.now() - inicio) / 1000;
+      document.getElementById("paso").textContent = pasos.filter((p) => s >= p[0]).pop()[1];
+      document.getElementById("avance").style.width = Math.min(95, 3 + (92 * s) / 22) + "%";
+    }, 500);
+    const listo = () => document.querySelector('[data-testid="stSidebarNav"], [data-testid="stChatInput"], [data-testid="stMainBlockContainer"] h1');
+    const retirar = () => {
+      clearInterval(reloj);
+      const c = document.getElementById("cargando");
+      if (!c) return;
+      document.getElementById("avance").style.width = "100%";
+      c.classList.add("fuera");
+      setTimeout(() => c.remove(), 450);
+    };
     const observador = new MutationObserver(() => {
-      if (document.getElementById("root").childElementCount) {
-        document.getElementById("cargando").remove();
-        observador.disconnect();
-      }
+      if (listo()) { observador.disconnect(); retirar(); }
     });
-    observador.observe(document.getElementById("root"), { childList: true });
+    observador.observe(document.getElementById("root"), { childList: true, subtree: true });
+    setTimeout(retirar, 120000);  // nunca dejar la pantalla de carga tapando la app
     // stlite pone en los enlaces del menú una dirección interna ficticia (https://stlite.invalid/...), que el
     // navegador muestra al pasar el mouse y que falla al abrirla en otra pestaña. Se reemplaza por la real.
     const arreglarEnlaces = () => document.querySelectorAll('a[href*="stlite.invalid"]').forEach((a) =>
