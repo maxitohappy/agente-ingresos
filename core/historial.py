@@ -17,7 +17,7 @@ def registro(resp, usuario: str = "") -> dict:
     r = resp.resultado
     return {
         "id": resp.id, "fecha": resp.fecha, "usuario": usuario, "pregunta": resp.pregunta,
-        "resumen": resp.resumen(),
+        "resumen": resp.resumen().replace("**", ""),
         "impacto": float(r.niveles.iloc[0]["Diferencia"]) if r is not None and r.es_simulacion else None,
         "tc": resp.tc, "consulta": json.dumps(resp.consulta.a_dict(), ensure_ascii=False),
     }
