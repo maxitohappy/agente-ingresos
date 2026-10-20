@@ -35,6 +35,7 @@ CATALOGO = {
             "frecuencia": "anual"},
     "pib_regional": {"nombre": "PIB regional anual (precios corrientes)", "unidad": "miles de millones de CLP",
                      "frecuencia": "anual"},
+    "tarifa_pasaje": {"nombre": "Tarifa promedio del pasaje por tramo", "unidad": "CLP", "frecuencia": "anual"},
     "turistas": {"nombre": "Llegadas de turistas extranjeros", "unidad": "personas", "frecuencia": "anual"},
 }
 MINDICADOR = {"dolar": "dolar", "euro": "euro", "uf": "uf", "utm": "utm", "ipc": "ipc", "imacec": "imacec",

@@ -8,7 +8,7 @@ from datetime import date, datetime
 import pandas as pd
 
 from . import backend, indicadores, interprete, jac, oaci, resena, simulador
-from .formato import millones, numero, porcentaje
+from .formato import millones, numero, pesos, porcentaje
 from .indicadores import CATALOGO, Valor
 from .interprete import Consulta
 
@@ -258,6 +258,75 @@ def responder_trafico(c: Consulta, df: pd.DataFrame, resp: "Respuesta") -> "Resp
     return resp
 
 
+ELASTICIDADES_PASAJE = (0.5, 1.0, 1.5)
+
+
+def sensibilidad(c: Consulta, df: pd.DataFrame, tar: dict, tc, uf, utm) -> pd.DataFrame:
+    """Impacto para variaciones de 5% a 25% en el sentido pedido."""
+    signo = 1 if c.cambio_valor > 0 else -1
+    filas = []
+    for p in (5, 10, 15, 20, 25):
+        ci = Consulta.desde_dict({**c.a_dict(), "cambio_tipo": "porcentaje", "cambio_valor": signo * p})
+        n = simulador.ejecutar(df, ci, tar, tc=tc, uf=uf, utm=utm).niveles
+        fila = {"Variación de la tasa": signo * p / 100, "Ingreso escenario": n.iloc[0]["Escenario"],
+                "Diferencia": n.iloc[0]["Diferencia"]}
+        for nivel in n.itertuples():
+            fila["Var. " + nivel.Nivel] = nivel.Variación
+        filas.append(fila)
+    return pd.DataFrame(filas)
+
+
+def efecto_pasajeros(r: simulador.Resultado, df: pd.DataFrame, tar: dict, memoria, resp: "Respuesta") -> list[dict]:
+    """Efecto en pasajeros de un cambio en una tasa que pagan las aerolíneas (solo si se traspasa al pasaje)."""
+    c = r.consulta
+    ce = Consulta(texto="", tipo="consulta", concepto=simulador.EMBARQUE, unidades=c.unidades,
+                  meses=sorted(r.meses + r.meses_proyectados), anio=c.anio, anualizar=c.anualizar)
+    emb = simulador.ejecutar(df, ce, tar)
+    pax, ingreso_emb = emb.pasajeros_base, float(emb.niveles.iloc[0]["Base"])
+    dif = float(r.niveles.iloc[0]["Diferencia"])
+    lugar = _texto_unidades(c, df) if c.unidades else "todas las unidades"
+    nombre = {"Aterrizajes": "tasa de aterrizaje", "Estacion": "tasa de estacionamiento", "Iluminaci": "tasa de "
+              "iluminación", "Ils": "tasa ILS", "Ruta": "tasa por servicios en ruta", "Sobrevuelos": "tasa de sobrevuelo"
+              }.get(c.filtro_descripcion or "", "tasa" if c.concepto == "Tasas" else (c.concepto or "").lower())
+    textos = [f"**Efecto en pasajeros.** La {nombre} la pagan las aerolíneas o concesionarios, no los "
+              "pasajeros: el cambio **no tiene un efecto directo** en la cantidad de pasajeros. Solo habría efecto si "
+              "las aerolíneas lo traspasan a los pasajes."]
+    if not pax:
+        textos.append(f"No hay pasajeros embarcados registrados en {lugar} para estimar el efecto indirecto.")
+        return [{"texto": t} for t in textos]
+    por_pax = dif / pax
+    textos.append(f"Si se traspasa completo, equivale a **{pesos(abs(por_pax))} por pasajero embarcado** "
+                  f"({numero(pax)} pasajeros en {lugar} en el período).")
+    tarifa = indicadores.obtener("tarifa_pasaje", c.region, memoria=memoria) or (
+        indicadores.obtener("tarifa_pasaje", None, memoria=memoria) if c.region else None)
+    if tarifa is None:
+        resp.faltantes.append(Faltante("tarifa_pasaje", c.region, str(c.anio),
+                                       "para estimar cuántos pasajeros adicionales generaría el traspaso al pasaje",
+                                       obligatorio=False))
+        return [{"texto": t} for t in textos]
+    resp.usados.append(tarifa)
+    cambio_precio = por_pax / tarifa.valor          # negativo si es rebaja
+    ingreso_por_pax = ingreso_emb / pax
+    filas = []
+    for e in ELASTICIDADES_PASAJE:
+        dpax = -e * cambio_precio
+        extra = pax * dpax
+        filas.append({"Elasticidad precio del pasaje": e, "Variación del pasaje": cambio_precio,
+                      "Variación de pasajeros": dpax, "Pasajeros adicionales": extra,
+                      "Ingreso adicional por derecho de embarque": extra * ingreso_por_pax,
+                      "Efecto neto (tasa + embarque)": dif + extra * ingreso_por_pax})
+    tabla = pd.DataFrame(filas)
+    resp.tablas["Efecto en pasajeros"] = tabla
+    medio = tabla.iloc[1]
+    textos.append(f"Con un pasaje promedio de {pesos(tarifa.valor)} ({tarifa.cita()}), el pasaje variaría "
+                  f"{porcentaje(cambio_precio, 2, True)}. Con elasticidad 1 los pasajeros variarían "
+                  f"**{porcentaje(medio['Variación de pasajeros'], 2, True)}** ({numero(medio['Pasajeros adicionales'])} "
+                  f"pasajeros), lo que agrega {millones(medio['Ingreso adicional por derecho de embarque'])} en derecho de "
+                  f"embarque; efecto neto {millones(medio['Efecto neto (tasa + embarque)'])}. "
+                  "Ver tabla con elasticidades 0,5 y 1,5.")
+    return [{"texto": t} for t in textos]
+
+
 def responder(pregunta: str, df: pd.DataFrame, tar: dict, tc_usuario: float | None = None,
               usar_ia: bool = True, usuario: str = "", consulta: Consulta | None = None) -> Respuesta:
     c = consulta or interpretar(pregunta, df, usar_ia)
@@ -311,6 +380,15 @@ def responder(pregunta: str, df: pd.DataFrame, tar: dict, tc_usuario: float | No
         return resp
     resp.resultado = r
     contexto = _ranking(r, df) + contexto_jac(r, df) + _contexto(r, df, memoria, resp.usados, resp.faltantes)
+    if c.sensibilidad:
+        resp.tablas["Sensibilidad"] = sensibilidad(c, df, tar, tc, uf, utm)
+        accion = "rebaja" if c.cambio_valor < 0 else "alza"
+        contexto.insert(0, {"texto": f"No indicaste de cuánto sería la {accion}: muestro un **escenario central de "
+                                     f"{porcentaje(c.cambio_valor / 100, 0, True)}** y una **sensibilidad de 5% a 25%** "
+                                     "(tabla abajo). Para un valor exacto escribe, por ejemplo, "
+                                     f"'{accion} de 15% …'."})
+    if c.efecto_pasajeros and r.es_simulacion:
+        contexto += efecto_pasajeros(r, df, tar, memoria, resp)
     resp.resena = resena.generar(r, contexto)
     for v in resp.usados:
         r.supuestos.append((v.etiqueta, f"{numero(v.valor, 2)} {v.unidad}", v.cita()))

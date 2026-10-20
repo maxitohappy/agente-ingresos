@@ -69,6 +69,13 @@ def generar(resp) -> bytes:
     hoja_m = wb.add_worksheet("Por mes")
     graficos = wb.add_worksheet("Gráficos")
     hoja_i = wb.add_worksheet("Indicadores y fuentes")
+    for nombre, df_ in getattr(resp, "tablas", {}).items():
+        w = wb.add_worksheet(nombre[:31])
+        w.set_column(0, len(df_.columns), 22)
+        w.write("A1", nombre, f["subtitulo"])
+        pct = {c_: "pct" for c_ in df_.columns if str(c_).startswith(("Var", "Variación"))}
+        fmt = {c_: "dec" for c_ in df_.columns if str(c_).startswith("Elasticidad")}
+        _tabla(w, 2, 0, df_, f, {**pct, **fmt})
 
     total_dif = None
     if calculo is not None:

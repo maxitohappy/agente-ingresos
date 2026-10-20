@@ -267,3 +267,42 @@ def test_oaci_texto():
 
     o = {"periodo": "2026-08", "regiones": {"Latinoamérica/Caribe": {"ask_total": 0.068, "ask_internacional": 0.06}}}
     assert oaci.texto_region(o) == "OACI (08/2026): en Latinoamérica/Caribe, capacidad total (ASK) +6,8%, internacional +6,0% interanual."
+
+
+# --- Cambio sin magnitud y efecto en pasajeros --------------------------------------------------
+
+PREGUNTA_EL_LOA = ("existe la intencion de bajar la tasa de aterrizaje en el aeródromo el loa, como afecta esta "
+                   "situación al total de ingresos por tasas de la Unidad? existe algun efecto en la cantidad de pasajeros?")
+
+
+def test_cambio_sin_magnitud_da_sensibilidad(df, tar, cat):
+    c = interprete.interpretar(PREGUNTA_EL_LOA, cat, 2026)
+    assert c.tipo == "simulacion" and c.sensibilidad and c.cambio_valor == -10
+    assert c.concepto == "Tasas" and c.filtro_descripcion == "Aterrizajes" and c.unidades == [1401]
+    assert c.efecto_pasajeros
+    r = agente.responder(PREGUNTA_EL_LOA, df, tar, tc_usuario=950)
+    assert r.resultado.impacto == pytest.approx(-0.1 * r.resultado.niveles.iloc[0]["Base"])
+    sens = r.tablas["Sensibilidad"]
+    assert list(sens["Variación de la tasa"]) == [-0.05, -0.10, -0.15, -0.20, -0.25]
+    assert any("no tiene un efecto directo" in p for p in r.resena)
+    assert any(f.indicador == "tarifa_pasaje" for f in r.faltantes)
+
+
+def test_efecto_pasajeros_con_tarifa(df, tar):
+    from core import indicadores
+
+    indicadores.guardar_en_memoria(indicadores.Valor(indicador="tarifa_pasaje|Antofagasta", periodo="2026",
+                                                     valor=60000, unidad="CLP", fuente="prueba"))
+    r = agente.responder(PREGUNTA_EL_LOA, df, tar, tc_usuario=950)
+    t = r.tablas["Efecto en pasajeros"]
+    dif = r.resultado.impacto
+    assert list(t["Elasticidad precio del pasaje"]) == [0.5, 1.0, 1.5]
+    assert (t["Pasajeros adicionales"] > 0).all()                    # una rebaja aumenta pasajeros
+    assert (t["Efecto neto (tasa + embarque)"] > dif).all()           # el embarque adicional compensa en parte
+    wb = openpyxl.load_workbook(io.BytesIO(excel.generar(r)))
+    assert {"Sensibilidad", "Efecto en pasajeros"} <= set(wb.sheetnames)
+
+
+def test_consulta_sin_intencion_sigue_siendo_consulta(cat):
+    assert interprete.interpretar("¿Cuánto representa Calama en el total de concesiones?", cat, 2026).tipo == "consulta"
+    assert interprete.interpretar("ingresos por tasas de aterrizaje de Calama", cat, 2026).tipo == "consulta"

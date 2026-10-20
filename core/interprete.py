@@ -22,6 +22,8 @@ NUM = r"(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)"
 BAJA = r"rebaj\w*|reduc\w*|disminu\w*|baj[ae]\w*|descuento\w*|bajar|recort\w*|menos"
 ALZA = r"alza\w*|aument\w*|sub[eiao]\w*|subir|increment\w*|reajust\w*|mas|encarec\w*|suba"
 CERO = r"elimin\w*|exencion|exentar|exime\w*|eximir|gratuit\w*|suprim\w*|liber\w* (?:del|de) pago"
+INTENCION = (r"\b(bajar|baja|bajen|rebajar|rebaja|rebajen|reducir|reduzca|reduccion|disminuir|disminucion|"
+             r"descuento|subir|suba|alza|aumentar|aumento|incrementar|incremento|reajustar|modificar|cambiar)\b")
 TRAFICO = (r"\b(jac|junta (?:de )?aeronautica|oaci|icao|trafico aereo|trafico de pasajeros|rutas?|aerolineas?|"
            r"operador(?:es)?|lineas aereas|capacidad aerea|ask|rpk|mercado aereo|estadisticas? de trafico)\b")
 
@@ -44,6 +46,8 @@ class Consulta:
     cambio_moneda: str | None = None    # USD | CLP | UF | UTM
     elasticidad: float | None = None    # magnitud; se aplica con signo negativo
     var_pasajeros: float | None = None  # % directo de variación de pasajeros
+    sensibilidad: bool = False          # se pidió un cambio sin magnitud: escenario central + tabla de sensibilidad
+    efecto_pasajeros: bool = False      # se pregunta por el efecto en pasajeros de una tasa que paga la aerolínea
     tipo_cambio: float | None = None
     dato: dict | None = None            # para tipo "dato": indicador, region, periodo, valor
     origen: str = "reglas"              # reglas | gemini | reglas+gemini
@@ -279,6 +283,12 @@ def interpretar(texto: str, catalogo_unidades: dict[int, str] | None = None, ani
         c.cambio_moneda = "USD" if c.cambio_valor and abs(c.cambio_valor) < 100 else "CLP"
         c.notas.append(f"No se indicó la moneda; se asumió {c.cambio_moneda}.")
 
+    # Intención de cambio sin magnitud ("bajar la tasa de aterrizaje"): escenario central ±10% y sensibilidad.
+    if c.cambio_tipo is None and (c.concepto or c.filtro_descripcion) and re.search(INTENCION, t):
+        signo = -1 if re.search(r"\b(" + BAJA + "|" + CERO + r")\b", t) else 1
+        c.cambio_tipo, c.cambio_valor, c.sensibilidad = "porcentaje", signo * 10.0, True
+        if c.concepto is None:
+            c.concepto = "Tasas"
     if c.cambio_tipo:
         c.tipo = "simulacion"
         if c.concepto is None:
@@ -308,6 +318,8 @@ def interpretar(texto: str, catalogo_unidades: dict[int, str] | None = None, ani
                        "'con elasticidad 0,5') o un aumento de pasajeros (p. ej. 'pasajeros aumentan 5%').")
     if c.anualizar:
         c.notas.append("Los meses sin datos se proyectan con el promedio mensual observado.")
+    c.efecto_pasajeros = c.tipo == "simulacion" and c.concepto != "Derecho de Embarque" and bool(
+        re.search(r"\bpasajer", t))
     return c
 
 

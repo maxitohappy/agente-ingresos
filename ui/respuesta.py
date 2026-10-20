@@ -93,7 +93,7 @@ def mostrar_tablas(resp, clave: str) -> None:
 
 
 def mostrar(resp, clave: str) -> None:
-    if resp.tablas:
+    if resp.tablas and resp.resultado is None:
         mostrar_tablas(resp, clave)
         return
     if resp.mensaje and resp.resultado is None:
@@ -127,6 +127,10 @@ def mostrar(resp, clave: str) -> None:
             st.markdown(md(p))
         for a in r.avisos:
             st.caption(md("ℹ️ " + a))
+        for nombre, df_ in resp.tablas.items():
+            with st.expander(nombre, expanded=True):
+                tabla(df_, porcentajes=[c_ for c_ in df_.columns if str(c_).startswith(PORCENTUALES)],
+                      decimales=0)
         t1, t2, t3, t4 = st.tabs(["Gráficos", "Niveles", "Detalle", "Supuestos y fuentes"])
         with t1:
             g1, g2 = st.columns(2)

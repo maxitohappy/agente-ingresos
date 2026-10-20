@@ -76,5 +76,8 @@ def generar(r: Resultado, contexto: list[dict] | None = None) -> list[str]:
         if c.concepto == EMBARQUE and r.pasajeros_base:
             parrafos.append(f"Pasajeros embarcados estimados: **{numero(r.pasajeros_base)}**.")
     for ctx in contexto or []:
-        parrafos.append(ctx["texto"])
+        if ctx["texto"].startswith("No indicaste"):
+            parrafos.insert(1, ctx["texto"])
+        else:
+            parrafos.append(ctx["texto"])
     return parrafos
