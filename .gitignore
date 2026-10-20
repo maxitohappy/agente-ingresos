@@ -21,3 +21,6 @@ tests/datos_locales/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Configuración local de clasp
+backend/.clasp.json

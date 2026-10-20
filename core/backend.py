@@ -18,6 +18,8 @@ _estado = {"caido": False}
 
 
 def url() -> str:
+    if os.environ.get("AGENTE_SIN_BACKEND"):
+        return ""
     env = os.environ.get("AGENTE_BACKEND_URL", "").strip()
     if env:
         return env

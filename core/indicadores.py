@@ -222,11 +222,14 @@ def obtener(indicador: str, region: str | None = None, periodo: str | None = Non
             memoria: list[Valor] | None = None) -> Valor | None:
     """Valor de un indicador siguiendo el orden: público -> memoria -> respaldo."""
     k = clave(indicador, region)
+    elegido = None
     for fuente in (_publicos_en_cache, lambda: memoria if memoria is not None else listar_memoria(), _respaldo):
         v = _mejor([x for x in fuente() if x.indicador == k], periodo)
-        if v is not None:
-            return v
-    return None
+        # Manda la fuente de mayor prioridad, salvo que otra tenga un período más reciente
+        # (ej. mindicador con un IPC desactualizado frente al respaldo).
+        if v is not None and (elegido is None or str(v.periodo) > str(elegido.periodo)):
+            elegido = v
+    return elegido
 
 
 def tabla_actual(memoria: list[Valor] | None = None):

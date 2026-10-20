@@ -12,7 +12,12 @@ from core import agente, datos, excel, interprete, simulador, tarifario  # noqa:
 
 @pytest.fixture(scope="session", autouse=True)
 def carpeta_temporal(tmp_path_factory):
+    import os
+
     from core import almacen
+
+    # Las pruebas nunca escriben en el historial ni en la memoria compartidos.
+    os.environ["AGENTE_SIN_BACKEND"] = "1"
 
     almacen.CARPETA = tmp_path_factory.mktemp("data")
 

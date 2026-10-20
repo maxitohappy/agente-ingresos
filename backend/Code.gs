@@ -49,8 +49,16 @@ function hoja_(ss, nombre, columnas) {
 
 function libro_() {
   const id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
-  if (!id) throw new Error('Backend sin configurar: ejecuta la función "configurar" en el editor.');
-  return SpreadsheetApp.openById(id);
+  if (id) return SpreadsheetApp.openById(id);
+  // Primera llamada: crea la planilla (con bloqueo para no crear dos).
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    if (!PropertiesService.getScriptProperties().getProperty('SHEET_ID')) configurar();
+  } finally {
+    lock.releaseLock();
+  }
+  return SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SHEET_ID'));
 }
 
 function json_(obj) {
@@ -82,6 +90,7 @@ function doPost(e) {
       case 'guardar_historial': return json_({ok: true, datos: agregar_(HOJA_HISTORIAL, COLS_HISTORIAL, d.registro)});
       case 'guardar_memoria': return json_({ok: true, datos: agregar_(HOJA_MEMORIA, COLS_MEMORIA, d.registro)});
       case 'borrar_memoria': return json_({ok: true, datos: borrar_(HOJA_MEMORIA, d.id)});
+      case 'borrar_historial': return json_({ok: true, datos: borrar_(HOJA_HISTORIAL, d.id)});
       default: return json_({ok: false, error: 'acción desconocida: ' + d.accion});
     }
   } catch (err) {

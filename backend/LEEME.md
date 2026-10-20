@@ -38,3 +38,17 @@ Para probarla, abre `TU_URL?accion=ping` en el navegador. Debe responder `{"ok":
   información sensible. La app solo envía preguntas, resúmenes de resultados e indicadores.
 - Cuotas gratuitas: Apps Script permite 20.000 llamadas externas al día; Gemini, en su capa gratuita, limita las
   solicitudes por minuto. Ambas sobran para el uso de un equipo.
+
+## Implementación actual y actualización con clasp
+
+El backend está implementado en la cuenta del dueño del repositorio, y su URL está en `datos/config.json`. Para
+actualizar el código sin cambiar la URL (requiere `clasp login` y el `.clasp.json` local, que no se publica):
+
+```bash
+cd backend
+clasp push -f
+clasp redeploy <ID de la implementación> -d "descripción"
+```
+
+Acciones disponibles: GET `ping`, `indicadores`, `pagina_dgac`, `historial`, `memoria`; POST `interpretar`,
+`guardar_historial`, `guardar_memoria`, `borrar_memoria`, `borrar_historial`.
