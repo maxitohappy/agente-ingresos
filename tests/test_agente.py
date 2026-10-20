@@ -306,3 +306,13 @@ def test_efecto_pasajeros_con_tarifa(df, tar):
 def test_consulta_sin_intencion_sigue_siendo_consulta(cat):
     assert interprete.interpretar("¿Cuánto representa Calama en el total de concesiones?", cat, 2026).tipo == "consulta"
     assert interprete.interpretar("ingresos por tasas de aterrizaje de Calama", cat, 2026).tipo == "consulta"
+
+
+def test_borrar_historial(df, tar):
+    from core import historial
+
+    r = agente.responder("alza de 10% en concesiones", df, tar)
+    historial.guardar(r, "prueba")
+    assert any(x["id"] == r.id for x in historial.listar()[0])
+    assert historial.borrar(r.id)
+    assert not any(x["id"] == r.id for x in historial.listar()[0])

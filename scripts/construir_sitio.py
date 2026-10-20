@@ -57,6 +57,12 @@ PLANTILLA = """<!doctype html>
       }
     });
     observador.observe(document.getElementById("root"), { childList: true });
+    // stlite pone en los enlaces del menú una dirección interna ficticia (https://stlite.invalid/...), que el
+    // navegador muestra al pasar el mouse y que falla al abrirla en otra pestaña. Se reemplaza por la real.
+    const arreglarEnlaces = () => document.querySelectorAll('a[href*="stlite.invalid"]').forEach((a) =>
+      a.setAttribute("href", a.getAttribute("href").replace(new RegExp("^https?://stlite[.]invalid(:[0-9]+)?"), location.origin)));
+    new MutationObserver(arreglarEnlaces).observe(document.getElementById("root"),
+      { subtree: true, childList: true, attributes: true, attributeFilter: ["href"] });
   </script>
 </body>
 </html>

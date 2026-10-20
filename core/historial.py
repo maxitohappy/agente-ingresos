@@ -40,6 +40,18 @@ def guardar(resp, usuario: str = "") -> str:
     return "local"
 
 
+def borrar(id_: str) -> bool:
+    """Elimina un registro del historial (compartido y local). False si falló el borrado compartido."""
+    almacen.escribir_json(LOCAL, [x for x in almacen.leer_json(LOCAL, []) if x.get("id") != id_])
+    _cache.update(filas=None)
+    if backend.configurado():
+        try:
+            backend.post("borrar_historial", {"id": id_})
+        except Exception:  # noqa: BLE001
+            return False
+    return True
+
+
 def listar(limite: int = 300, forzar: bool = False) -> tuple[list[dict], str]:
     """Registros más recientes primero y el origen ('compartido' o 'local')."""
     import time
