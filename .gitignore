@@ -1,0 +1,23 @@
+# Datos locales: nunca se publican datos de detalle (clientes, RUT, documentos)
+data/
+_site/
+*.xlsx
+*.xls
+*.xlsm
+*.pdf
+*.docx
+*.pptx
+*.parquet
+*.pkl
+*.zip
+tests/datos_locales/
+
+# Credenciales
+.streamlit/secrets.toml
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
