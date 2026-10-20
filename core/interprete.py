@@ -155,7 +155,7 @@ def _dato(t: str, original: str) -> dict | None:
             regiones = [alias.UNIDADES[u][0] for u in unidades]
         if regiones or "regional" in resto:
             ind, region = "pib_regional", (regiones[0] if regiones else None)
-    anio = re.search(r"\b(20\d\d)\b", resto)
+    anio = re.search(r"\b((?:19|20)\d\d)\b", resto)
     periodo = anio.group(1) if anio else (str(date.today().year - 1) if ind.startswith("pib") or ind == "turistas"
                                           else date.today().isoformat()[:7])
     valor = numero(m.group(4))
