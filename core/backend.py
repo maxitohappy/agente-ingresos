@@ -1,6 +1,6 @@
 """Cliente del backend gratuito en Google Apps Script (ver backend/LEEME.md).
 
-El backend guarda el historial y la memoria de indicadores en una Google Sheet compartida,
+El backend guarda la memoria de indicadores en una Google Sheet compartida,
 consulta Gemini con la clave guardada en el propio script y lee páginas públicas que el
 navegador no puede leer directamente por CORS. Si no está configurado o no responde, la app
 sigue funcionando con almacenamiento local.
@@ -40,11 +40,11 @@ def _respuesta(r) -> dict:
     return r.get("datos")
 
 
-def get(accion: str, **params):
+def get(accion: str, timeout: int = 40, **params):
     if not configurado():
         raise red.ErrorRed("backend no configurado")
     try:
-        return _respuesta(red.get_json(url(), {"accion": accion, **params}, timeout=40))
+        return _respuesta(red.get_json(url(), {"accion": accion, **params}, timeout=timeout))
     except red.ErrorRed as e:
         if "no se pudo conectar" in str(e).lower():
             _estado["caido"] = True
@@ -56,6 +56,3 @@ def post(accion: str, datos: dict):
         raise red.ErrorRed("backend no configurado")
     return _respuesta(red.post_json(url(), {"accion": accion, **datos}, timeout=90))
 
-
-def reintentar() -> None:
-    _estado["caido"] = False

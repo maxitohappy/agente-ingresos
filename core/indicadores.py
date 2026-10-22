@@ -176,7 +176,7 @@ def _respaldo() -> list[Valor]:
 # --- 2. Memoria del usuario ----------------------------------------------------------------
 
 # Caché en memoria del proceso: evita ir al backend en cada cambio de página.
-SEGUNDOS_MEMORIA = 300
+SEGUNDOS_MEMORIA = 1800  # se invalida al guardar o borrar un valor
 _memoria = {"filas": None, "hora": 0.0}
 
 

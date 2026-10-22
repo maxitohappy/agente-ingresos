@@ -1,7 +1,7 @@
 /**
  * Backend gratuito de "Agente Ingresos" (Google Apps Script).
  *
- * - Historial compartido y memoria de indicadores en una Google Sheet.
+ * - Memoria compartida de indicadores en una Google Sheet.
  * - Interpretación de preguntas con Gemini (la clave queda oculta en las Propiedades del script).
  * - Lectura de páginas públicas (DGAC, mindicador, CMF, Banco Central) sin restricciones CORS.
  *
@@ -13,9 +13,7 @@
  *   SHEET_ID        (se crea solo al ejecutar `configurar`)
  */
 
-const HOJA_HISTORIAL = 'historial';
 const HOJA_MEMORIA = 'memoria';
-const COLS_HISTORIAL = ['id', 'fecha', 'usuario', 'pregunta', 'resumen', 'impacto', 'tc', 'consulta'];
 const COLS_MEMORIA = ['id', 'indicador', 'periodo', 'valor', 'unidad', 'fuente', 'usuario', 'fecha_registro', 'origen'];
 const DGAC_API = 'https://servicios.dgac.gob.cl/dgac_backend/api/v1/public/paginas/';
 
@@ -24,12 +22,11 @@ function configurar() {
   const props = PropertiesService.getScriptProperties();
   let id = props.getProperty('SHEET_ID');
   if (!id) {
-    const ss = SpreadsheetApp.create('Agente Ingresos – historial y memoria');
+    const ss = SpreadsheetApp.create('Agente Ingresos – memoria de indicadores');
     id = ss.getId();
     props.setProperty('SHEET_ID', id);
   }
   const ss = SpreadsheetApp.openById(id);
-  hoja_(ss, HOJA_HISTORIAL, COLS_HISTORIAL);
   hoja_(ss, HOJA_MEMORIA, COLS_MEMORIA);
   const sobrante = ss.getSheetByName('Hoja 1') || ss.getSheetByName('Sheet1');
   if (sobrante && ss.getSheets().length > 2) ss.deleteSheet(sobrante);
@@ -75,7 +72,6 @@ function doGet(e) {
       case 'jac_informe': return json_({ok: true, datos: jacInforme_()});
       case 'pagina_dgac': return json_({ok: true, datos: paginaDgac_(p.slug || 'tasa-embarque')});
       case 'archivo': return json_({ok: true, datos: archivo_(p.url)});
-      case 'historial': return json_({ok: true, datos: leerCache_(HOJA_HISTORIAL, Number(p.limite) || 300)});
       case 'memoria': return json_({ok: true, datos: leerCache_(HOJA_MEMORIA, 2000)});
       default: return json_({ok: false, error: 'acción desconocida: ' + p.accion});
     }
@@ -90,11 +86,9 @@ function doPost(e) {
     d = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     switch (d.accion) {
       case 'interpretar': return json_({ok: true, datos: interpretar_(d)});
-      case 'guardar_historial': return json_({ok: true, datos: invalidar_(HOJA_HISTORIAL, agregar_(HOJA_HISTORIAL, COLS_HISTORIAL, d.registro))});
       case 'guardar_memoria': return json_({ok: true, datos: invalidar_(HOJA_MEMORIA, agregar_(HOJA_MEMORIA, COLS_MEMORIA, d.registro))});
       case 'borrar_memoria': return json_({ok: true, datos: invalidar_(HOJA_MEMORIA, borrar_(HOJA_MEMORIA, d.id))});
       case 'guardar_jac': return json_({ok: true, datos: guardarJac_(d.informe)});
-      case 'borrar_historial': return json_({ok: true, datos: invalidar_(HOJA_HISTORIAL, borrar_(HOJA_HISTORIAL, d.id))});
       default: return json_({ok: false, error: 'acción desconocida: ' + d.accion});
     }
   } catch (err) {

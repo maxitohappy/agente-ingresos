@@ -11,7 +11,6 @@ EN_NAVEGADOR = red.EN_NAVEGADOR
 # Paleta validada (skill dataviz, app anterior): base, escenario.
 COLOR_BASE = "#2a78d6"
 COLOR_ESCENARIO = "#eb6834"
-DATOS_USUARIO = "agregado_usuario.csv"
 PREFERENCIAS = "preferencias.json"
 
 
@@ -26,15 +25,8 @@ def guardar_preferencias() -> None:
 
 
 def ingresos() -> pd.DataFrame:
-    """Agregado vigente: el que subió el usuario en este equipo o el publicado."""
     if "df" not in st.session_state:
-        propio = almacen.ruta(DATOS_USUARIO)
-        if propio.exists():
-            st.session_state.df = datos.cargar_agregado(propio)
-            st.session_state.df_origen = "Excel cargado en este equipo"
-        else:
-            st.session_state.df = datos.cargar_agregado()
-            st.session_state.df_origen = "Datos publicados (Ingresos acumulados 2026, agregados)"
+        st.session_state.df = datos.cargar_agregado()
     return st.session_state.df
 
 
@@ -45,38 +37,67 @@ def tarifas() -> dict:
 
 
 def inicializar() -> None:
-    """Primera carga de la sesión: actualiza tarifario e indicadores sin que el usuario lo pida."""
+    """Actualiza tarifario, indicadores, memoria e informe JAC con una sola llamada al backend.
+
+    La primera pantalla se dibuja de inmediato con los datos guardados. El navegador solo muestra los elementos
+    cuando termina una ejecución, así que la carga se hace en un fragmento con temporizador que el navegador
+    dispara después de dibujar; al terminar, la página se vuelve a dibujar una vez con los valores del día.
+    """
     if st.session_state.get("inicializado"):
         return
-    with st.spinner("Consultando tarifario DGAC e indicadores económicos…"):
-        msgs = []
-        inicio = None
-        if backend.configurado():
-            # Una sola llamada trae indicadores, tarifario DGAC y memoria compartida.
-            try:
-                inicio = backend.get("inicio")
-            except Exception as e:  # noqa: BLE001
-                msgs.append(f"Backend sin respuesta ({e}); se usan datos guardados.")
-        if inicio:
-            msgs.append(tarifario.actualizar_desde_dgac(pagina=inicio.get("pagina_dgac"))
-                        if inicio.get("pagina_dgac") else "Tarifario DGAC: " + inicio.get("pagina_dgac_error", "sin datos"))
-            if "indicadores" in inicio:
-                msgs.append("Indicadores: " + "; ".join(indicadores.actualizar_cache(precargados=inicio["indicadores"])))
-            if "memoria" in inicio:
-                indicadores.precargar_memoria(inicio["memoria"])
-            jac.precargar(inicio.get("jac"))
-            st.session_state.ia_disponible = bool(inicio.get("ia"))
-        else:
-            if not EN_NAVEGADOR:
-                msgs.append(tarifario.actualizar_desde_dgac())
-            msgs.append("Indicadores: " + "; ".join(indicadores.actualizar_cache()))
-        st.session_state.pop("tar", None)
-    st.session_state.estado_fuentes = msgs
+
+    @st.fragment(run_every=0.5)
+    def _cargar_en_segundo_plano():
+        if not st.session_state.get("pantalla_dibujada"):
+            st.session_state.pantalla_dibujada = True   # primera ejecución: solo dibujar
+            return
+        if not st.session_state.get("inicializado"):
+            _cargar()
+            st.rerun(scope="app")
+
+    _cargar_en_segundo_plano()
+
+
+def _cargar() -> None:
     st.session_state.inicializado = True
+    # Se aprovecha esta ejecución (la pantalla ya está visible) para cargar las librerías de gráficos y Excel,
+    # así la primera consulta no espera por ellas.
+    from core import excel  # noqa: F401
+    from ui import graficos  # noqa: F401
+
+    msgs = []
+    inicio = None
+    if backend.configurado():
+        try:
+            inicio = backend.get("inicio", timeout=15)
+        except Exception as e:  # noqa: BLE001
+            msgs.append(f"Backend sin respuesta ({e}); se usan datos guardados.")
+    if inicio:
+        msgs.append(tarifario.actualizar_desde_dgac(pagina=inicio.get("pagina_dgac"))
+                    if inicio.get("pagina_dgac") else "Tarifario DGAC: " + inicio.get("pagina_dgac_error", "sin datos"))
+        if "indicadores" in inicio:
+            msgs.append("Indicadores: " + "; ".join(indicadores.actualizar_cache(precargados=inicio["indicadores"])))
+        if "memoria" in inicio:
+            indicadores.precargar_memoria(inicio["memoria"])
+        jac.precargar(inicio.get("jac"))
+        st.session_state.ia_disponible = bool(inicio.get("ia"))
+    else:
+        if not EN_NAVEGADOR:
+            msgs.append(tarifario.actualizar_desde_dgac())
+        msgs.append("Indicadores: " + "; ".join(indicadores.actualizar_cache()))
+    if jac.vencido():   # informe JAC del día: se descarga aquí, con la pantalla ya visible
+        jac.informe()
+    st.session_state.estado_fuentes = msgs
+    st.session_state.pop("tar", None)
+    # Si el usuario no cambió el tipo de cambio sugerido, se reemplaza por el del día.
+    nuevo = tc_sugerido()
+    if nuevo and st.session_state.get("tc") == st.session_state.get("tc_inicial"):
+        st.session_state.tc = st.session_state.tc_inicial = round(nuevo.valor, 2)
 
 
 def tc_sugerido() -> indicadores.Valor | None:
-    return indicadores.obtener("dolar")
+    # Antes de la carga inicial no se consulta la memoria compartida (evita esperar al backend).
+    return indicadores.obtener("dolar", memoria=None if st.session_state.get("inicializado") else [])
 
 
 def barra_lateral() -> None:
@@ -85,7 +106,7 @@ def barra_lateral() -> None:
         st.markdown("### Supuestos")
         sug = tc_sugerido()
         if "tc" not in st.session_state:
-            st.session_state.tc = round(sug.valor, 2) if sug else None
+            st.session_state.tc = st.session_state.tc_inicial = round(sug.valor, 2) if sug else None
         st.session_state.tc = st.number_input(
             "Tipo de cambio para conversiones (CLP por USD)", min_value=0.0, value=st.session_state.tc,
             step=1.0, format="%.2f", placeholder="Ingresa el valor",
@@ -95,7 +116,8 @@ def barra_lateral() -> None:
             st.caption(f"Sugerido: {numero(sug.valor, 2)} – {sug.cita()}")
         else:
             st.caption("Sin dólar observado disponible: ingrésalo para simular cambios en dólares.")
-        nombre = st.text_input("Tu nombre (para el historial)", value=p.get("usuario", ""), max_chars=40)
+        nombre = st.text_input("Tu nombre (opcional)", value=p.get("usuario", ""), max_chars=40,
+                               help="Se registra junto a los indicadores que ingreses en la memoria compartida.")
         ia_ok = backend.configurado() and st.session_state.get("ia_disponible", True)
         ia = st.toggle("Usar IA (Gemini) si las reglas no entienden", value=p.get("usar_ia", True) and ia_ok,
                        disabled=not ia_ok,
@@ -107,7 +129,7 @@ def barra_lateral() -> None:
         st.divider()
         estado = "🟢 conectado" if backend.configurado() else "⚪ sin backend (modo local)"
         st.caption(f"Backend compartido: {estado}")
-        st.caption(f"Datos: {st.session_state.get('df_origen', '')}")
+        st.caption("Datos: Ingresos acumulados 2026 (agregados por unidad, concepto y mes)")
 
 
 def md(texto: str) -> str:
@@ -125,16 +147,3 @@ def tabla(df: pd.DataFrame, decimales: int = 0, porcentajes: list[str] | None = 
     formatos = {c: (lambda v, dd=decimales: numero(v, dd)) for c in numericas}
     formatos.update({c: (lambda v: porcentaje(v, 2)) for c in porcentajes if c in df.columns})
     st.dataframe(df.style.format(formatos), hide_index=True, width="stretch", **kwargs)
-
-
-def editor(df: pd.DataFrame, clave: str, **kwargs) -> pd.DataFrame:
-    """`st.data_editor` compatible con stlite 1.9.2 (con key y filas fijas falla en el navegador)."""
-    if EN_NAVEGADOR and kwargs.get("num_rows", "fixed") == "fixed":
-        d = df.copy()
-        d["_editor"] = clave
-        config = dict(kwargs.pop("column_config", None) or {})
-        config["_editor"] = None
-        if isinstance(kwargs.get("disabled"), list):
-            kwargs["disabled"] = kwargs["disabled"] + ["_editor"]
-        return st.data_editor(d, column_config=config, **kwargs).drop(columns="_editor")
-    return st.data_editor(df, key=clave, **kwargs)

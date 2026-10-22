@@ -14,7 +14,7 @@ STLITE = "1.9.2"
 CARPETAS = ["core", "paginas", "ui", "datos"]
 ARCHIVOS = ["app.py"]
 EXTENSIONES = {".py", ".json", ".csv"}
-REQUISITOS = ["openpyxl", "xlsxwriter", "pypdf"]
+REQUISITOS = ["xlsxwriter", "pypdf"]
 
 PLANTILLA = """<!doctype html>
 <html lang="es">

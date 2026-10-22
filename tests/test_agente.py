@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import openpyxl
+import pandas as pd
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -16,7 +17,7 @@ def carpeta_temporal(tmp_path_factory):
 
     from core import almacen
 
-    # Las pruebas nunca escriben en el historial ni en la memoria compartidos.
+    # Las pruebas nunca escriben en la memoria compartida.
     os.environ["AGENTE_SIN_BACKEND"] = "1"
 
     almacen.CARPETA = tmp_path_factory.mktemp("data")
@@ -237,8 +238,6 @@ def test_excel_generado(df, tar):
     ws = wb["Cálculo"]
     assert ws["B3"].value == 950 and ws["B7"].value == 0.3
     assert str(ws["I12"].value).startswith("=")   # pasajeros con fórmula
-    wb2 = openpyxl.load_workbook(io.BytesIO(excel.historial([{"pregunta": "x", "resumen": "y"}])))
-    assert wb2["Historial"]["C4"].value == "x"
 
 
 # --- Tráfico aéreo (JAC / OACI) ------------------------------------------------------------------
@@ -347,11 +346,9 @@ def test_consulta_sin_intencion_sigue_siendo_consulta(cat):
     assert interprete.interpretar("ingresos por tasas de aterrizaje de Calama", cat, 2026).tipo == "consulta"
 
 
-def test_borrar_historial(df, tar):
-    from core import historial
-
-    r = agente.responder("alza de 10% en concesiones", df, tar)
-    historial.guardar(r, "prueba")
-    assert any(x["id"] == r.id for x in historial.listar()[0])
-    assert historial.borrar(r.id)
-    assert not any(x["id"] == r.id for x in historial.listar()[0])
+def test_sensibilidad_lineal_igual_a_recalcular(df, tar, cat):
+    c = interprete.interpretar(PREGUNTA_EL_LOA, cat, 2026)
+    central = simulador.ejecutar(df, c, tar, tc=950)
+    rapida = agente.sensibilidad(c, df, tar, 950, None, None, central=central)
+    completa = agente.sensibilidad(c, df, tar, 950, None, None)
+    pd.testing.assert_frame_equal(rapida, completa, rtol=1e-9)

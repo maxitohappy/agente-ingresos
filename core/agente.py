@@ -59,17 +59,6 @@ class Respuesta:
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     fecha: str = field(default_factory=lambda: datetime.now().isoformat(timespec="seconds"))
 
-    def resumen(self) -> str:
-        if self.resultado is None:
-            if self.tablas and self.resena:
-                return self.resena[0][:200]
-            return self.mensaje[:200]
-        sel = self.resultado.niveles.iloc[0]
-        if self.resultado.es_simulacion:
-            return (f"{millones(sel['Diferencia'])} ({porcentaje(sel['Variación'], signo=True)}) en "
-                    f"{sel['Nivel']}; total ingresos {porcentaje(self.resultado.niveles.iloc[-1]['Variación'], 2, True)}")
-        return f"{sel['Nivel']}: {millones(sel['Base'])}"
-
 
 def _catalogo(df: pd.DataFrame) -> dict[int, str]:
     return dict(zip(df["unidad_cod"], df["unidad"]))
@@ -168,7 +157,7 @@ def contexto_jac(r: simulador.Resultado, df: pd.DataFrame) -> list[dict]:
                         f"recaudación ({porcentaje(pax_obs / ult['pasajeros'] - 1, 1, True)}).")
             salida.append({"texto": txt})
     if c.concepto == simulador.EMBARQUE:
-        inf = jac.informe()
+        inf = jac.informe(descargar=False)  # una simulación nunca espera la descarga del PDF
         u = jac.ultimo_mes(inf)
         if u:
             acum = (inf or {}).get("acumulado") or {}
@@ -261,13 +250,26 @@ def responder_trafico(c: Consulta, df: pd.DataFrame, resp: "Respuesta") -> "Resp
 ELASTICIDADES_PASAJE = (0.5, 1.0, 1.5)
 
 
-def sensibilidad(c: Consulta, df: pd.DataFrame, tar: dict, tc, uf, utm) -> pd.DataFrame:
-    """Impacto para variaciones de 5% a 25% en el sentido pedido."""
+def sensibilidad(c: Consulta, df: pd.DataFrame, tar: dict, tc, uf, utm,
+                 central: simulador.Resultado | None = None) -> pd.DataFrame:
+    """Impacto para variaciones de 5% a 25% en el sentido pedido.
+
+    Con pasajeros constantes el impacto es proporcional al %: se escala el escenario central en vez de
+    recalcular cinco simulaciones.
+    """
     signo = 1 if c.cambio_valor > 0 else -1
+    lineal = (central is not None and c.cambio_tipo == "porcentaje" and c.cambio_valor and c.var_pasajeros is None
+              and not (c.elasticidad and c.precio_pasaje))
     filas = []
     for p in (5, 10, 15, 20, 25):
-        ci = Consulta.desde_dict({**c.a_dict(), "cambio_tipo": "porcentaje", "cambio_valor": signo * p})
-        n = simulador.ejecutar(df, ci, tar, tc=tc, uf=uf, utm=utm).niveles
+        if lineal:
+            n = central.niveles.copy()
+            n["Diferencia"] = n["Diferencia"] * (signo * p) / c.cambio_valor
+            n["Escenario"] = n["Base"] + n["Diferencia"]
+            n["Variación"] = (n["Diferencia"] / n["Base"]).where(n["Base"] != 0, 0.0)
+        else:
+            ci = Consulta.desde_dict({**c.a_dict(), "cambio_tipo": "porcentaje", "cambio_valor": signo * p})
+            n = simulador.ejecutar(df, ci, tar, tc=tc, uf=uf, utm=utm).niveles
         fila = {"Variación de la tasa": signo * p / 100, "Ingreso escenario": n.iloc[0]["Escenario"],
                 "Diferencia": n.iloc[0]["Diferencia"]}
         for nivel in n.itertuples():
@@ -415,7 +417,7 @@ def responder(pregunta: str, df: pd.DataFrame, tar: dict, tc_usuario: float | No
     resp.resultado = r
     contexto = _ranking(r, df) + contexto_jac(r, df) + _contexto(r, df, memoria, resp.usados, resp.faltantes)
     if c.sensibilidad:
-        resp.tablas["Sensibilidad"] = sensibilidad(c, df, tar, tc, uf, utm)
+        resp.tablas["Sensibilidad"] = sensibilidad(c, df, tar, tc, uf, utm, central=r)
         accion = "rebaja" if c.cambio_valor < 0 else "alza"
         contexto.insert(0, {"texto": f"No indicaste de cuánto sería la {accion}: muestro un **escenario central de "
                                      f"{porcentaje(c.cambio_valor / 100, 0, True)}** y una **sensibilidad de 5% a 25%** "

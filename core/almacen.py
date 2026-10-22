@@ -1,4 +1,4 @@
-"""Archivos locales de la app (historial y memoria sin backend, caché de indicadores, datos subidos).
+"""Archivos locales de la app (memoria sin backend, cachés de indicadores, tarifario e informe JAC).
 
 En el navegador la carpeta es /mnt/datos (IndexedDB, persiste entre visitas en ese equipo);
 en local es data/ dentro del proyecto (ignorada por git).

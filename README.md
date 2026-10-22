@@ -2,8 +2,7 @@
 
 Chat en lenguaje natural para simular el impacto de cambios tarifarios sobre los ingresos de la DGAC
 (derecho de embarque, tasas aeronáuticas, combustible, concesiones y otros ingresos) por unidad, región y mes.
-Cada respuesta incluye cálculos, gráficos, una reseña y un **Excel descargable** con fórmulas vivas, y queda
-registrada en un **historial**.
+Cada respuesta incluye cálculos, gráficos, una reseña y un **Excel descargable** con fórmulas vivas.
 
 **App:** <https://maxitohappy.github.io/agente-ingresos/> (se abre en el navegador; la primera carga toma unos
 20–60 segundos)
@@ -27,7 +26,6 @@ registrada en un **historial**.
 | Datos públicos | Tarifario de embarque desde la API pública de la DGAC; dólar, UF, UTM, IPC, IMACEC y TPM desde mindicador.cl (y CMF / Banco Central si se configuran). |
 | Tráfico aéreo | JAC: informe mensual (en línea vía backend) y base histórica de embarques por aeropuerto (`scripts/actualizar_jac.py`), usada para validar pasajeros y proyectar con estacionalidad. OACI: Monthly Monitor (`scripts/actualizar_oaci.py`, debe correr desde un PC porque la OACI bloquea servidores en la nube). |
 | Memoria | Si falta un indicador (p. ej. PIB regional), la app lo pide y lo guarda para futuras consultas. |
-| Historial | Compartido en una Google Sheet a través del backend; sin backend, local en cada navegador. |
 | Excel | Hojas Resumen, Cálculo (celdas editables y fórmulas), Por unidad, Por mes, Gráficos, Indicadores y fuentes. |
 
 ## Datos y privacidad
@@ -43,12 +41,10 @@ python scripts/agregar_datos.py "C:/ruta/Ingresos acumulados 2026.xlsx"
 python scripts/verificar_publicacion.py --generar-lista "C:/ruta/Ingresos acumulados 2026.xlsx"
 ```
 
-También se puede cargar una planilla en la propia app (*Datos e indicadores → Ingresos*). En ese caso se procesa
-solo en ese navegador.
 
 ## Backend compartido (opcional, gratis)
 
-Ver [backend/LEEME.md](backend/LEEME.md): un Google Apps Script con historial y memoria compartidos, Gemini y
+Ver [backend/LEEME.md](backend/LEEME.md): un Google Apps Script con memoria compartida de indicadores, Gemini y
 lectura de páginas públicas.
 
 ## Desarrollo

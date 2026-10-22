@@ -7,7 +7,6 @@ from core.formato import numero, porcentaje
 from ui import graficos
 from ui.comun import barra_lateral, inicializar, tabla
 
-inicializar()
 barra_lateral()
 st.title("Tráfico aéreo (JAC y OACI)")
 st.caption("Estadísticas públicas que el agente usa para validar los pasajeros inferidos, proyectar con "
@@ -83,3 +82,5 @@ with t3:
         tabla(reg, porcentajes=[c for c in reg.columns if c != "Región"])
         st.caption(f"Fuente: [OACI]({o['url']}). El sitio de la OACI no permite lectura automática desde la nube; "
                    f"se actualiza con `scripts/actualizar_oaci.py` (última actualización {o['actualizado'][:10]}).")
+
+inicializar()

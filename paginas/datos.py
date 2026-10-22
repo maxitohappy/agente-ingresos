@@ -3,11 +3,10 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 
-from core import almacen, datos, indicadores, tarifario
+from core import datos, indicadores, tarifario
 from core.indicadores import CATALOGO, Valor
-from ui.comun import DATOS_USUARIO, barra_lateral, ingresos, inicializar, preferencias, tabla, tarifas
+from ui.comun import barra_lateral, ingresos, inicializar, preferencias, tabla, tarifas
 
-inicializar()
 barra_lateral()
 st.title("Datos e indicadores")
 
@@ -90,32 +89,16 @@ with t2:
 
 with t3:
     df = ingresos()
-    st.caption(f"Origen: {st.session_state.get('df_origen')}. Meses: "
+    st.caption("Origen: planilla Ingresos acumulados 2026 (agregada; se actualiza con scripts/agregar_datos.py). Meses: "
                + ", ".join(f"{datos.MESES[m - 1]} {a}" for a, m in datos.meses_disponibles(df)))
     resumen = df.pivot_table(index="concepto", columns="mes", values="monto", aggfunc="sum", fill_value=0)
     resumen.columns = [datos.MESES[m - 1][:3] for m in resumen.columns]
     resumen["Total"] = resumen.sum(axis=1)
     resumen.loc["Total"] = resumen.sum()
     tabla(resumen.reset_index().rename(columns={"concepto": "Concepto"}))
-    st.markdown("**Cargar un Excel actualizado** (mismo formato que *Ingresos acumulados 2026.xlsx*). Se procesa en "
-                "este equipo y reemplaza los datos solo aquí.")
-    archivo = st.file_uploader("Excel de ingresos", type=["xlsx"])
-    if archivo is not None and st.button("Procesar y usar este archivo", type="primary"):
-        with st.spinner("Leyendo y agregando…"):
-            try:
-                nuevo = datos.leer_excel(archivo.getvalue())
-                datos.guardar_agregado(nuevo, almacen.ruta(DATOS_USUARIO))
-                for k in ("df", "df_origen"):
-                    st.session_state.pop(k, None)
-                st.success(f"Listo: {len(nuevo):,} filas agregadas, total ${nuevo['monto'].sum():,.0f}".replace(",", "."))
-            except Exception as e:  # noqa: BLE001
-                st.error(f"No se pudo leer el archivo: {e}")
-    if almacen.ruta(DATOS_USUARIO).exists() and st.button("Volver a los datos publicados"):
-        almacen.borrar(DATOS_USUARIO)
-        for k in ("df", "df_origen"):
-            st.session_state.pop(k, None)
-        st.rerun()
 
 with t4:
     for m in st.session_state.get("estado_fuentes", []):
         st.write("• " + str(m))
+
+inicializar()

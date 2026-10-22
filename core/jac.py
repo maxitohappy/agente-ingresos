@@ -155,10 +155,19 @@ def interpretar_paginas(paginas: list[str]) -> dict:
             "rutas": rutas, "resumen": resumen}
 
 
-def informe(forzar: bool = False) -> dict | None:
-    """Último informe mensual (caché local de 24 horas). None si no está disponible."""
+def vencido() -> bool:
     cache = almacen.leer_json(CACHE_INFORME, {})
-    if not forzar and cache.get("fecha") and datetime.now() - datetime.fromisoformat(cache["fecha"]) < timedelta(hours=24):
+    return not cache.get("fecha") or datetime.now() - datetime.fromisoformat(cache["fecha"]) >= timedelta(hours=24)
+
+
+def informe(forzar: bool = False, descargar: bool = True) -> dict | None:
+    """Último informe mensual (caché local de 24 horas). None si no está disponible.
+
+    Con descargar=False nunca espera la descarga del PDF: devuelve lo que haya en caché, aunque esté vencido
+    (la actualización se hace en la carga en segundo plano de la app).
+    """
+    cache = almacen.leer_json(CACHE_INFORME, {})
+    if not descargar or (not forzar and not vencido()):
         return cache.get("informe")
     try:
         if backend.configurado():

@@ -6,11 +6,22 @@ import re
 import pandas as pd
 import streamlit as st
 
-from core import agente, excel, indicadores
+from core import agente, indicadores
 from core.formato import millones, numero, porcentaje
 from core.indicadores import Valor
-from ui import graficos
 from ui.comun import ingresos, md, preferencias, tabla, tarifas
+
+
+def _graficos():
+    from ui import graficos  # Altair: se importa al dibujar el primer gráfico, no al abrir la app
+
+    return graficos
+
+
+def _excel():
+    from core import excel  # xlsxwriter: se importa al generar el primer Excel
+
+    return excel
 
 
 def _nombre_archivo(resp) -> str:
@@ -25,7 +36,7 @@ def _grafico_unidades(r):
         return None
     d = pu.rename(columns={"unidad": "Unidad", "monto": "Base", "escenario": "Escenario"})
     series = ["Base", "Escenario"] if r.es_simulacion else ["Base"]
-    return graficos.barras(d, "Unidad", series, "Por unidad (millones de $)", horizontal=True, escala=1e6)
+    return _graficos().barras(d, "Unidad", series, "Por unidad (millones de $)", horizontal=True, escala=1e6)
 
 
 def _grafico_meses(r):
@@ -35,7 +46,7 @@ def _grafico_meses(r):
     d = pm.assign(Periodo=[m + (" (proy.)" if p else "") for m, p in zip(pm["Mes"], pm["proyectado"])]).rename(
         columns={"monto": "Base", "escenario": "Escenario"})
     series = ["Base", "Escenario"] if r.es_simulacion else ["Base"]
-    return graficos.barras(d, "Periodo", series, "Por mes (millones de $)", escala=1e6)
+    return _graficos().barras(d, "Periodo", series, "Por mes (millones de $)", escala=1e6)
 
 
 def _recalcular(resp, **cambios) -> None:
@@ -81,15 +92,32 @@ def mostrar_tablas(resp, clave: str) -> None:
     g = resp.grafico
     if g is not None and not g["datos"].empty:
         porcentual = all(s.startswith(PORCENTUALES) for s in g["series"])
-        st.altair_chart(graficos.barras(g["datos"], g["x"], g["series"], g["titulo"], porcentual=porcentual,
+        st.altair_chart(_graficos().barras(g["datos"], g["x"], g["series"], g["titulo"], porcentual=porcentual,
                                         horizontal=porcentual), width="stretch", key=f"gt_{clave}")
     for nombre, df in resp.tablas.items():
         with st.expander(nombre, expanded=len(resp.tablas) == 1):
             tabla(df, porcentajes=[c for c in df.columns if str(c).startswith(PORCENTUALES)])
     if "excel" not in resp.__dict__:
-        resp.__dict__["excel"] = excel.generar_tablas(resp)
+        resp.__dict__["excel"] = _excel().generar_tablas(resp)
     st.download_button("📥 Descargar Excel", resp.__dict__["excel"], file_name=_nombre_archivo(resp),
                        key=f"dl_{clave}", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+def mostrar_compacto(resp, clave: str) -> None:
+    """Respuesta anterior en versión breve: conclusión, Excel y botón para ver el detalle."""
+    texto = resp.resena[0] if resp.resena else resp.mensaje
+    st.markdown(md(texto))
+    if resp.resultado is None and not resp.tablas:
+        return
+    c1, c2, _ = st.columns([1.3, 1, 2])
+    if c1.button("Ver detalle completo", key=f"abrir_{clave}", icon=":material/expand_more:"):
+        st.session_state.setdefault("abiertas", set()).add(resp.id)
+        st.rerun()
+    if "excel" not in resp.__dict__:
+        resp.__dict__["excel"] = (_excel().generar(resp) if resp.resultado is not None
+                                  else _excel().generar_tablas(resp))
+    c2.download_button("📥 Excel", resp.__dict__["excel"], file_name=_nombre_archivo(resp), key=f"dlc_{clave}",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
 def mostrar(resp, clave: str) -> None:
@@ -156,7 +184,7 @@ def mostrar(resp, clave: str) -> None:
             st.caption(f"Interpretación ({c.origen}): concepto **{c.concepto or 'todos'}**, ámbito **{c.ambito}**, "
                        f"cambio **{c.descripcion_cambio()}**, meses **{', '.join(map(str, c.meses)) or 'todos'}**.")
         if "excel" not in resp.__dict__:
-            resp.__dict__["excel"] = excel.generar(resp)
+            resp.__dict__["excel"] = _excel().generar(resp)
         b1, b2 = st.columns([1, 2])
         b1.download_button("📥 Descargar Excel (cálculos, gráficos y reseña)", resp.__dict__["excel"],
                            file_name=_nombre_archivo(resp), key=f"dl_{clave}",

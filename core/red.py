@@ -17,11 +17,13 @@ class ErrorRed(Exception):
     pass
 
 
-def _xhr(metodo: str, url: str, cuerpo: str | None = None) -> str:
+def _xhr(metodo: str, url: str, cuerpo: str | None = None, timeout: int = TIMEOUT) -> str:
     from js import XMLHttpRequest  # type: ignore  # solo existe en Pyodide
 
     req = XMLHttpRequest.new()
     req.open(metodo, url, False)
+    # Límite de espera: sin él, un backend lento deja la app congelada (en un Web Worker se permite en modo síncrono).
+    req.timeout = int(timeout * 1000)
     if cuerpo is not None:
         # text/plain evita la consulta previa CORS (preflight), que Apps Script no responde.
         req.setRequestHeader("Content-Type", "text/plain;charset=utf-8")
@@ -38,7 +40,7 @@ def get_texto(url: str, params: dict | None = None, timeout: int = TIMEOUT) -> s
     if params:
         url += ("&" if "?" in url else "?") + urlencode(params)
     if EN_NAVEGADOR:
-        return _xhr("GET", url)
+        return _xhr("GET", url, timeout=timeout)
     import requests
 
     try:
@@ -56,7 +58,7 @@ def get_json(url: str, params: dict | None = None, timeout: int = TIMEOUT):
 def post_json(url: str, datos: dict, timeout: int = 60):
     cuerpo = json.dumps(datos, ensure_ascii=False)
     if EN_NAVEGADOR:
-        return json.loads(_xhr("POST", url, cuerpo))
+        return json.loads(_xhr("POST", url, cuerpo, timeout=timeout))
     import requests
 
     try:

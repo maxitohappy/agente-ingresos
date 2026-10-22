@@ -1,9 +1,8 @@
 # Backend compartido (Google Apps Script) – 5 minutos, gratis
 
-El backend es opcional. Sin él, la app funciona igual, pero el historial y la memoria quedan solo en cada
+El backend es opcional. Sin él, la app funciona igual, pero la memoria de indicadores queda solo en cada
 navegador y no hay interpretación con IA. Con él:
 
-- **Historial compartido**: todos ven las consultas de todos (Google Sheet en tu Drive).
 - **Memoria compartida de indicadores**: un PIB regional ingresado por una persona queda disponible para todos.
 - **IA (Gemini)** para preguntas que las reglas no entienden. Solo se envía el texto de la pregunta.
 - **Lectura de páginas públicas** (DGAC, mindicador, CMF, Banco Central). El navegador no puede leerlas
@@ -34,8 +33,8 @@ Para probarla, abre `TU_URL?accion=ping` en el navegador. Debe responder `{"ok":
 
 - Si cambias el código, usa **Implementar → Administrar implementaciones → Editar → Versión nueva**, así se
   mantiene la misma URL.
-- La URL `/exec` es pública: cualquiera que la conozca puede leer y escribir el historial. No guardes ahí
-  información sensible. La app solo envía preguntas, resúmenes de resultados e indicadores.
+- La URL `/exec` es pública: cualquiera que la conozca puede leer y escribir la memoria de indicadores. No guardes ahí
+  información sensible. La app solo envía preguntas e indicadores.
 - Cuotas gratuitas: Apps Script permite 20.000 llamadas externas al día; Gemini, en su capa gratuita, limita las
   solicitudes por minuto. Ambas sobran para el uso de un equipo.
 
@@ -50,5 +49,5 @@ clasp push -f
 clasp redeploy <ID de la implementación> -d "descripción"
 ```
 
-Acciones disponibles: GET `ping`, `indicadores`, `pagina_dgac`, `historial`, `memoria`; POST `interpretar`,
-`guardar_historial`, `guardar_memoria`, `borrar_memoria`, `borrar_historial`.
+Acciones disponibles: GET `ping`, `inicio`, `indicadores`, `pagina_dgac`, `archivo`, `jac_informe`, `memoria`;
+POST `interpretar`, `guardar_memoria`, `borrar_memoria`, `guardar_jac`.

@@ -410,22 +410,3 @@ def generar_tablas(resp) -> bytes:
             ws.insert_chart(len(resp.resena) + 7, 0, ch)
     wb.close()
     return buf.getvalue()
-
-
-def historial(registros: list[dict]) -> bytes:
-    buf = io.BytesIO()
-    wb = xlsxwriter.Workbook(buf, {"in_memory": True})
-    f = _formatos(wb)
-    ws = wb.add_worksheet("Historial")
-    ws.write("A1", "Historial de consultas – Agente Ingresos", f["titulo"])
-    df = pd.DataFrame([{"Fecha": r.get("fecha", ""), "Usuario": r.get("usuario", ""), "Pregunta": r.get("pregunta", ""),
-                        "Resultado": r.get("resumen", ""), "Impacto (CLP)": r.get("impacto")} for r in registros])
-    if df.empty:
-        df = pd.DataFrame(columns=["Fecha", "Usuario", "Pregunta", "Resultado", "Impacto (CLP)"])
-    ws.set_column("A:A", 20)
-    ws.set_column("B:B", 16)
-    ws.set_column("C:D", 70)
-    ws.set_column("E:E", 18)
-    _tabla(ws, 2, 0, df, f)
-    wb.close()
-    return buf.getvalue()

@@ -3,7 +3,6 @@ import streamlit as st
 from core import agente, backend
 from ui.comun import barra_lateral, inicializar
 
-inicializar()
 barra_lateral()
 st.title("Ayuda")
 
@@ -63,5 +62,7 @@ st.subheader("Backend compartido")
 if backend.configurado():
     st.success(f"Conectado a {backend.url()[:60]}…")
 else:
-    st.warning("Sin backend: el historial y la memoria quedan solo en este navegador, y la interpretación con IA "
+    st.warning("Sin backend: la memoria de indicadores queda solo en este navegador, y la interpretación con IA "
                "está desactivada. Ver `backend/LEEME.md` en el repositorio para activarlo (5 minutos, gratis).")
+
+inicializar()
