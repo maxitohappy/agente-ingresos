@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="es"><head><meta charset="UTF-8" /><title>Agente Ingresos</title>
+<script>
+  var partes = location.pathname.split("/").filter(Boolean);
+  var raiz = location.hostname.endsWith("github.io") && partes.length ? "/" + partes[0] + "/" : "/";
+  location.replace(raiz);
+</script></head><body>Redirigiendo…</body></html>

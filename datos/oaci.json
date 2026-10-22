@@ -1,0 +1,32 @@
+{
+ "periodo": "2026-08",
+ "regiones": {
+  "África": {
+   "ask_total": 0.057,
+   "ask_internacional": 0.055
+  },
+  "Asia/Pacífico": {
+   "ask_total": 0.009000000000000001,
+   "ask_internacional": -0.001
+  },
+  "Europa": {
+   "ask_total": 0.026000000000000002,
+   "ask_internacional": -0.028999999999999998
+  },
+  "Latinoamérica/Caribe": {
+   "ask_total": 0.068,
+   "ask_internacional": 0.06
+  },
+  "Medio Oriente": {
+   "ask_total": -0.105,
+   "ask_internacional": -0.113
+  },
+  "Norteamérica": {
+   "ask_total": 0.036000000000000004,
+   "ask_internacional": 0.01
+  }
+ },
+ "edicion": "202608",
+ "url": "https://www.icao.int/sites/default/files/sustainability/Documents/ICAO-Monthly-Monitor_202608.pdf",
+ "actualizado": "2026-10-20T11:15:54"
+}

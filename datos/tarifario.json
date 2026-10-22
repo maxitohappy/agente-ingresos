@@ -1,0 +1,28 @@
+{
+  "_nota": "Derechos de embarque (DAR 50, art. 60). Los valores en pesos se reajustan por IPC el día 10 de enero, abril, julio y octubre. Las vigencias de 2025-10 a 2026-07 fueron verificadas contra los montos de la planilla de ingresos 2026 (cada documento es un múltiplo exacto de la tarifa). La app agrega nuevas vigencias automáticamente desde la API pública de la DGAC.",
+  "clases": {
+    "NAC_1C": {"nombre": "Embarque nacional 1ª categoría", "moneda": "CLP", "tasas": [21101]},
+    "NAC_2C": {"nombre": "Embarque nacional 2ª categoría", "moneda": "CLP", "tasas": [21102]},
+    "NAC_270": {"nombre": "Embarque nacional hasta 270 km", "moneda": "CLP", "tasas": [21103]},
+    "INT_MAS500": {"nombre": "Embarque internacional > 500 km", "moneda": "USD", "tasas": [21201]},
+    "INT_MENOS500": {"nombre": "Embarque internacional ≤ 500 km (= 1ª categoría nacional)", "moneda": "CLP", "tasas": [21202], "igual_a": "NAC_1C"}
+  },
+  "vigencias": [
+    {"clase": "NAC_1C", "desde": "2025-10-10", "valor": 7806, "fuente": "Inferido de la planilla 2026 (enero, días 1-9)"},
+    {"clase": "NAC_2C", "desde": "2025-10-10", "valor": 5950, "fuente": "Inferido de la planilla 2026 (enero, días 1-9)"},
+    {"clase": "NAC_270", "desde": "2025-10-10", "valor": 3085, "fuente": "Inferido de la planilla 2026 (enero, días 1-9)"},
+    {"clase": "NAC_1C", "desde": "2026-01-10", "valor": 7814, "fuente": "Tarifario DGAC 1er trimestre 2026 (verificado con la planilla)"},
+    {"clase": "NAC_2C", "desde": "2026-01-10", "valor": 5956, "fuente": "Tarifario DGAC 1er trimestre 2026 (verificado con la planilla)"},
+    {"clase": "NAC_270", "desde": "2026-01-10", "valor": 3088, "fuente": "Tarifario DGAC 1er trimestre 2026 (verificado con la planilla)"},
+    {"clase": "NAC_1C", "desde": "2026-04-10", "valor": 7923, "fuente": "Res. Exenta DGAC N°0917 de 08.ABR.2026 (2do trimestre)"},
+    {"clase": "NAC_2C", "desde": "2026-04-10", "valor": 6039, "fuente": "Res. Exenta DGAC N°0917 de 08.ABR.2026 (2do trimestre)"},
+    {"clase": "NAC_270", "desde": "2026-04-10", "valor": 3131, "fuente": "Res. Exenta DGAC N°0917 de 08.ABR.2026 (2do trimestre)"},
+    {"clase": "NAC_1C", "desde": "2026-07-10", "valor": 8034, "fuente": "Tarifario DGAC 3er trimestre 2026 (verificado con la planilla)"},
+    {"clase": "NAC_2C", "desde": "2026-07-10", "valor": 6124, "fuente": "Tarifario DGAC 3er trimestre 2026 (verificado con la planilla)"},
+    {"clase": "NAC_270", "desde": "2026-07-10", "valor": 3175, "fuente": "Tarifario DGAC 3er trimestre 2026 (verificado con la planilla)"},
+    {"clase": "NAC_1C", "desde": "2026-10-10", "valor": 8122, "fuente": "Tarifario Nacional DGAC 4to trimestre 2026 (reajuste 1,1%)"},
+    {"clase": "NAC_2C", "desde": "2026-10-10", "valor": 6191, "fuente": "Tarifario Nacional DGAC 4to trimestre 2026 (reajuste 1,1%)"},
+    {"clase": "NAC_270", "desde": "2026-10-10", "valor": 3210, "fuente": "Tarifario Nacional DGAC 4to trimestre 2026 (reajuste 1,1%)"},
+    {"clase": "INT_MAS500", "desde": "2020-01-01", "valor": 25, "fuente": "DAR 50 art. 60 / Tarifario Internacional DGAC"}
+  ]
+}

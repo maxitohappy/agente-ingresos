@@ -1,0 +1,1280 @@
+{
+ "actualizado": "2026-10-20T10:20:16",
+ "nota": "Últimos valores públicos conocidos; la app los usa solo si las fuentes en línea no responden.",
+ "registros": [
+  {
+   "indicador": "dolar",
+   "periodo": "2023-01",
+   "valor": 826.3357,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-02",
+   "valor": 798.2575,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-03",
+   "valor": 809.5039,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-04",
+   "valor": 803.8368,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-05",
+   "valor": 798.6355,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-06",
+   "valor": 799.8725,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-07",
+   "valor": 813.3971,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-08",
+   "valor": 855.6595,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-09",
+   "valor": 884.4037,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-10",
+   "valor": 926.347,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-11",
+   "valor": 886.6143,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2023-12",
+   "valor": 874.6658,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-01",
+   "valor": 907.9868,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-02",
+   "valor": 963.4424,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-03",
+   "valor": 967.9325,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-04",
+   "valor": 960.1382,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-05",
+   "valor": 917.8771,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-06",
+   "valor": 926.0811,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-07",
+   "valor": 937.5609,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-08",
+   "valor": 929.8952,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-09",
+   "valor": 926.2144,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-10",
+   "valor": 933.8123,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-11",
+   "valor": 971.6,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2024-12",
+   "valor": 982.296,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-01",
+   "valor": 1000.7636,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-02",
+   "valor": 956.62,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-03",
+   "valor": 932.5519,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-04",
+   "valor": 961.9571,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-05",
+   "valor": 941.0125,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-06",
+   "valor": 938.037,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-07",
+   "valor": 951.55,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-08",
+   "valor": 966.3035,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-09",
+   "valor": 960.3675,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-10",
+   "valor": 953.9732,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-11",
+   "valor": 935.6975,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2025-12",
+   "valor": 916.163,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2026-01",
+   "valor": 883.9657,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2026-02",
+   "valor": 862.02,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2026-03",
+   "valor": 909.8932,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2026-04",
+   "valor": 897.8862,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2026-05",
+   "valor": 897.6379,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2026-06",
+   "valor": 903.3843,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2026-07",
+   "valor": 930.97,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2026-08",
+   "valor": 917.6633,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2026-09",
+   "valor": 947.2671,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "dolar",
+   "periodo": "2026-10",
+   "valor": 979.9942,
+   "unidad": "CLP por USD (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-01",
+   "valor": 0.4,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-02",
+   "valor": -0.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-03",
+   "valor": -2.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-04",
+   "valor": -1.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-05",
+   "valor": -2.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-06",
+   "valor": -1.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-07",
+   "valor": 1.8,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-08",
+   "valor": -0.9,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-09",
+   "valor": 0.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-10",
+   "valor": 0.3,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-11",
+   "valor": 1.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2023-12",
+   "valor": -1.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-01",
+   "valor": 2.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-02",
+   "valor": 4.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-03",
+   "valor": 0.8,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-04",
+   "valor": 3.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-05",
+   "valor": 1.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-06",
+   "valor": 0.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-07",
+   "valor": 4.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-08",
+   "valor": 2.3,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-09",
+   "valor": 0.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-10",
+   "valor": 2.3,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-11",
+   "valor": 2.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2024-12",
+   "valor": 6.6,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-01",
+   "valor": 2.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-02",
+   "valor": -0.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-03",
+   "valor": 3.8,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-04",
+   "valor": 2.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-05",
+   "valor": 3.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-06",
+   "valor": 3.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-07",
+   "valor": 1.8,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-08",
+   "valor": 0.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-09",
+   "valor": 3.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-10",
+   "valor": 2.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-11",
+   "valor": 1.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2025-12",
+   "valor": 1.7,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2026-01",
+   "valor": -0.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2026-02",
+   "valor": -0.3,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2026-03",
+   "valor": -0.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2026-04",
+   "valor": -1.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2026-05",
+   "valor": -0.9,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2026-06",
+   "valor": 2.4,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2026-07",
+   "valor": -1.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "imacec",
+   "periodo": "2026-08",
+   "valor": -1.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-01",
+   "valor": 0.8,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-02",
+   "valor": -0.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-03",
+   "valor": 1.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-04",
+   "valor": 0.3,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-05",
+   "valor": 0.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-06",
+   "valor": -0.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-07",
+   "valor": 0.4,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-08",
+   "valor": 0.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-09",
+   "valor": 0.7,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-10",
+   "valor": 0.4,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-11",
+   "valor": 0.7,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2023-12",
+   "valor": -0.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-01",
+   "valor": 0.7,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-02",
+   "valor": 0.6,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-03",
+   "valor": 0.4,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-04",
+   "valor": 0.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-05",
+   "valor": 0.3,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-06",
+   "valor": -0.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-07",
+   "valor": 0.7,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-08",
+   "valor": 0.3,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-09",
+   "valor": 0.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-10",
+   "valor": 1.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-11",
+   "valor": 0.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2024-12",
+   "valor": -0.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-01",
+   "valor": 1.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-02",
+   "valor": 0.4,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-03",
+   "valor": 0.5,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-04",
+   "valor": 0.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-05",
+   "valor": 0.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-06",
+   "valor": -0.4,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-07",
+   "valor": 0.9,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-08",
+   "valor": 0.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-09",
+   "valor": 0.4,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-10",
+   "valor": 0.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-11",
+   "valor": 0.3,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2025-12",
+   "valor": -0.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2026-01",
+   "valor": 0.4,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2026-02",
+   "valor": 0.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2026-03",
+   "valor": 1.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2026-04",
+   "valor": 1.3,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2026-05",
+   "valor": 0.2,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2026-06",
+   "valor": 0.0,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2026-07",
+   "valor": 0.1,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2026-08",
+   "valor": 0.6,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "ipc",
+   "periodo": "2026-09",
+   "valor": 0.4,
+   "unidad": "%",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-01",
+   "valor": 35227.2365,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-02",
+   "valor": 35382.1418,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-03",
+   "valor": 35579.6184,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-04",
+   "valor": 35666.6533,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-05",
+   "valor": 35969.5342,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-06",
+   "valor": 36069.313,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-07",
+   "valor": 36079.8861,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-08",
+   "valor": 36068.7035,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-09",
+   "valor": 36175.9047,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-10",
+   "valor": 36273.5868,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-11",
+   "valor": 36489.395,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2023-12",
+   "valor": 36669.3765,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-01",
+   "valor": 36805.7258,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-02",
+   "valor": 36750.981,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-03",
+   "valor": 36984.3235,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-04",
+   "valor": 37187.5087,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-05",
+   "valor": 37349.9132,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-06",
+   "valor": 37514.773,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-07",
+   "valor": 37591.3781,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-08",
+   "valor": 37638.5477,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-09",
+   "valor": 37849.9067,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-10",
+   "valor": 37950.0887,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-11",
+   "valor": 38078.2073,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2024-12",
+   "valor": 38367.6881,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-01",
+   "valor": 38415.8542,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-02",
+   "valor": 38467.2532,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-03",
+   "valor": 38807.3032,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-04",
+   "valor": 38983.1107,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-05",
+   "valor": 39146.9616,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-06",
+   "valor": 39229.2757,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-07",
+   "valor": 39246.1548,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-08",
+   "valor": 39231.8361,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-09",
+   "valor": 39471.967,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-10",
+   "valor": 39527.1884,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-11",
+   "valor": 39637.4667,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2025-12",
+   "valor": 39674.8768,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-01",
+   "valor": 39737.1119,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-02",
+   "valor": 39724.7146,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-03",
+   "valor": 39835.1265,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-04",
+   "valor": 39943.715,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-05",
+   "valor": 40361.9161,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-06",
+   "valor": 40763.8177,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-07",
+   "valor": 40841.6313,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-08",
+   "valor": 40855.5403,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-09",
+   "valor": 40946.915,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-10",
+   "valor": 41164.69,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  },
+  {
+   "indicador": "uf",
+   "periodo": "2026-11",
+   "valor": 41274.2,
+   "unidad": "CLP (promedio mensual)",
+   "fuente": "mindicador"
+  }
+ ]
+}
