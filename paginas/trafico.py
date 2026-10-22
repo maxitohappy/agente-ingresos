@@ -34,7 +34,7 @@ with t1:
             s["Mes"] = [f"{MESES[m - 1][:3].lower()}-{str(a)[2:]}" for a, m in zip(s["anio"], s["mes"])]
             s = s.rename(columns={"domestico": "Doméstico", "internacional": "Internacional", "total": "Total",
                                   "var_dom": "Var. doméstico", "var_int": "Var. internacional", "var_total": "Var. total"})
-            st.altair_chart(graficos.barras(s, "Mes", ["Doméstico", "Internacional"], "Pasajeros transportados por mes"),
+            st.vega_lite_chart(*graficos.barras(s, "Mes", ["Doméstico", "Internacional"], "Pasajeros transportados por mes"),
                             width="stretch")
             tabla(s[["Mes", "Doméstico", "Internacional", "Total", "Var. doméstico", "Var. internacional", "Var. total"]],
                   porcentajes=["Var. doméstico", "Var. internacional", "Var. total"])
@@ -61,7 +61,7 @@ with t2:
         anual["Total"] = anual.sum(axis=1)
         anual = anual.reset_index().rename(columns={"anio": "Año", "nacional": "Nacional", "internacional": "Internacional"})
         anual["Año"] = anual["Año"].astype(str)
-        st.altair_chart(graficos.barras(anual, "Año", ["Total"],
+        st.vega_lite_chart(*graficos.barras(anual, "Año", ["Total"],
                                         f"Pasajeros embarcados, {MESES[meses[0] - 1][:3].lower()}–"
                                         f"{MESES[meses[-1] - 1][:3].lower()} de cada año"), width="stretch")
         tabla(anual)
@@ -76,7 +76,7 @@ with t3:
         reg = pd.DataFrame([{"Región": k, **v} for k, v in o["regiones"].items()]).rename(columns={
             "ask_total": "ASK total", "ask_internacional": "ASK internacional", "rpk_total": "RPK total"})
         st.subheader(f"ICAO Air Transport Monthly Monitor – {o['periodo']}")
-        st.altair_chart(graficos.barras(reg, "Región", ["ASK total", "ASK internacional"],
+        st.vega_lite_chart(*graficos.barras(reg, "Región", ["ASK total", "ASK internacional"],
                                         "Capacidad (asientos-km), variación interanual", horizontal=True,
                                         porcentual=True), width="stretch")
         tabla(reg, porcentajes=[c for c in reg.columns if c != "Región"])

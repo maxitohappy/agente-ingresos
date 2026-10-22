@@ -95,26 +95,45 @@ def _quitar(t: str, m: re.Match) -> str:
     return t[: m.start()] + " " * (m.end() - m.start()) + t[m.end():]
 
 
+# Patrones de alias compilados una sola vez: son cientos y, compilados en cada pregunta, desbordaban la caché de
+# expresiones regulares de Python (era ~40% del tiempo de cálculo en el navegador).
+_PATRONES: dict[str, re.Pattern] = {}
+_PARES: dict = {}
+
+
+def _patron(a: str) -> re.Pattern:
+    p = _PATRONES.get(a)
+    if p is None:
+        p = _PATRONES[a] = re.compile(r"(?<![\w])" + re.escape(a) + r"(?![\w])")
+    return p
+
+
 def _buscar_alias(t: str, pares: list[tuple[str, object]]) -> tuple[list, str]:
     """Busca alias (el más largo primero) como palabras completas y los borra del texto."""
     encontrados = []
     for a, valor in sorted(pares, key=lambda p: -len(p[0])):
-        patron = r"(?<![\w])" + re.escape(a) + r"(?![\w])"
-        m = re.search(patron, t)
+        if a not in t:   # descarte rápido: si el texto no contiene el alias, no hay coincidencia posible
+            continue
+        patron = _patron(a)
+        m = patron.search(t)
         while m:
             if valor not in encontrados:
                 encontrados.append(valor)
             t = _quitar(t, m)
-            m = re.search(patron, t)
+            m = patron.search(t)
     return encontrados, t
 
 
 def _pares_unidades(catalogo: dict[int, str] | None) -> list[tuple[str, int]]:
+    clave = tuple(sorted((catalogo or {}).items()))
+    if clave in _PARES:
+        return _PARES[clave]
     pares = [(a, cod) for cod, (_, als) in alias.UNIDADES.items() for a in als]
     for cod, nombre in (catalogo or {}).items():
         n = normalizar(nombre)
         n2 = re.sub(r"^(ap|ad|e\.a)\.?\s*", "", n).strip()
         pares += [(n, cod)] + ([(n2, cod)] if len(n2) > 3 else [])
+    _PARES[clave] = pares
     return pares
 
 

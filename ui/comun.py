@@ -60,10 +60,7 @@ def inicializar() -> None:
 
 def _cargar() -> None:
     st.session_state.inicializado = True
-    # Se aprovecha esta ejecución (la pantalla ya está visible) para cargar las librerías de gráficos y Excel,
-    # así la primera consulta no espera por ellas.
-    from core import excel  # noqa: F401
-    from ui import graficos  # noqa: F401
+    _precalentar()
 
     msgs = []
     inicio = None
@@ -93,6 +90,26 @@ def _cargar() -> None:
     nuevo = tc_sugerido()
     if nuevo and st.session_state.get("tc") == st.session_state.get("tc_inicial"):
         st.session_state.tc = st.session_state.tc_inicial = round(nuevo.valor, 2)
+
+
+def _precalentar() -> None:
+    """Con la pantalla ya visible, deja listo todo lo que la primera consulta usaría por primera vez.
+
+    Carga las librerías de Excel y de conversión de tablas, compila los patrones del intérprete y calcula los
+    pasajeros inferidos (se reutilizan en todas las consultas). Así la primera pregunta responde tan rápido
+    como las siguientes.
+    """
+    import io
+
+    try:
+        from core import agente, excel  # noqa: F401
+
+        pd.DataFrame({"a": [1.0], "b": ["x"]}).to_parquet(io.BytesIO())   # motor que usa st.dataframe
+        df = ingresos()
+        agente.responder("rebaja de 5 dólares del derecho de embarque", df, tarifas(), tc_usuario=950.0,
+                         usar_ia=False)
+    except Exception:  # noqa: BLE001 - el precalentamiento nunca debe impedir que la app funcione
+        pass
 
 
 def tc_sugerido() -> indicadores.Valor | None:
@@ -141,9 +158,13 @@ def tabla(df: pd.DataFrame, decimales: int = 0, porcentajes: list[str] | None = 
     if df is None or df.empty:
         st.info("Sin datos para mostrar.")
         return
+    # Los números se convierten a texto con formato chileno antes de mostrarlos: el sistema de estilos de pandas
+    # (Styler) hacía lo mismo pero costaba ~0,1 s por tabla en el navegador.
     porcentajes = porcentajes or []
-    numericas = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c]) and c not in porcentajes
-                 and not pd.api.types.is_bool_dtype(df[c])]
-    formatos = {c: (lambda v, dd=decimales: numero(v, dd)) for c in numericas}
-    formatos.update({c: (lambda v: porcentaje(v, 2)) for c in porcentajes if c in df.columns})
-    st.dataframe(df.style.format(formatos), hide_index=True, width="stretch", **kwargs)
+    d = df.copy()
+    for c in d.columns:
+        if c in porcentajes:
+            d[c] = [porcentaje(v, 2) for v in d[c]]
+        elif pd.api.types.is_numeric_dtype(d[c]) and not pd.api.types.is_bool_dtype(d[c]):
+            d[c] = [numero(v, decimales) for v in d[c]]
+    st.dataframe(d, hide_index=True, width="stretch", **kwargs)

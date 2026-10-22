@@ -147,6 +147,19 @@ def _pasajeros(df: pd.DataFrame, tar: dict) -> pd.DataFrame:
     return d
 
 
+_CACHE_PAX: dict = {}
+
+
+def _pasajeros_cache(df: pd.DataFrame, anio: int, disp: list[int], tar: dict) -> pd.DataFrame:
+    """Los pasajeros inferidos dependen solo de los datos y el tarifario: se calculan una vez por sesión."""
+    clave = (id(df), len(df), anio, tuple(disp), id(tar), len(tar.get("vigencias", [])))
+    if clave not in _CACHE_PAX:
+        if len(_CACHE_PAX) > 6:
+            _CACHE_PAX.clear()
+        _CACHE_PAX[clave] = _pasajeros(df[(df["anio"] == anio) & df["mes"].isin(disp)], tar)
+    return _CACHE_PAX[clave].copy()
+
+
 def ejecutar(df: pd.DataFrame, c: Consulta, tar: dict, tc: float | None = None, uf: float | None = None,
              utm: float | None = None) -> Resultado:
     anio = c.anio if c.anio in df["anio"].unique() else int(df["anio"].max())
@@ -161,7 +174,7 @@ def ejecutar(df: pd.DataFrame, c: Consulta, tar: dict, tc: float | None = None, 
                       f" {anio}; se usan solo los meses disponibles (pide 'año completo' para proyectar).")
     if not meses and not futuros:
         meses = disp
-    d = _pasajeros(df[(df["anio"] == anio) & df["mes"].isin(disp)], tar)
+    d = _pasajeros_cache(df, anio, disp, tar)
     d["proyectado"] = False
     proy = _proyectar(d, anio, futuros)
     if not proy.empty:

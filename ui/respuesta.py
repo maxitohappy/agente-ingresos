@@ -13,7 +13,7 @@ from ui.comun import ingresos, md, preferencias, tabla, tarifas
 
 
 def _graficos():
-    from ui import graficos  # Altair: se importa al dibujar el primer gráfico, no al abrir la app
+    from ui import graficos
 
     return graficos
 
@@ -92,7 +92,7 @@ def mostrar_tablas(resp, clave: str) -> None:
     g = resp.grafico
     if g is not None and not g["datos"].empty:
         porcentual = all(s.startswith(PORCENTUALES) for s in g["series"])
-        st.altair_chart(_graficos().barras(g["datos"], g["x"], g["series"], g["titulo"], porcentual=porcentual,
+        st.vega_lite_chart(*_graficos().barras(g["datos"], g["x"], g["series"], g["titulo"], porcentual=porcentual,
                                         horizontal=porcentual), width="stretch", key=f"gt_{clave}")
     for nombre, df in resp.tablas.items():
         with st.expander(nombre, expanded=len(resp.tablas) == 1):
@@ -164,9 +164,9 @@ def mostrar(resp, clave: str) -> None:
             g1, g2 = st.columns(2)
             f1, f2 = _grafico_unidades(r), _grafico_meses(r)
             if f1 is not None:
-                g1.altair_chart(f1, width="stretch", key=f"gu_{clave}")
+                g1.vega_lite_chart(*f1, width="stretch", key=f"gu_{clave}")
             if f2 is not None:
-                g2.altair_chart(f2, width="stretch", key=f"gm_{clave}")
+                g2.vega_lite_chart(*f2, width="stretch", key=f"gm_{clave}")
         with t2:
             tabla(r.niveles if r.es_simulacion else r.niveles[["Nivel", "Base"]], porcentajes=["Variación"])
         with t3:
